@@ -30,16 +30,16 @@ pub struct ParseError {
 pub type ParseResult<T> = Result<T, ParseError>;
 impl ::std::fmt::Display for ParseError {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::result::Result<(), ::std::fmt::Error> {
-        try!(write!(fmt, "error at {}:{}: expected ", self.line, self.column));
+        write!(fmt, "error at {}:{}: expected ", self.line, self.column)?;
         if self.expected.len() == 0 {
-            try!(write!(fmt, "EOF"));
+            write!(fmt, "EOF")?;
         } else if self.expected.len() == 1 {
-            try!(write!(fmt, "`{}`", escape_default(self.expected.iter().next().unwrap())));
+            write!(fmt, "`{}`", escape_default(self.expected.iter().next().unwrap()))?;
         } else {
             let mut iter = self.expected.iter();
-            try!(write!(fmt, "one of `{}`", escape_default(iter.next().unwrap())));
+            write!(fmt, "one of `{}`", escape_default(iter.next().unwrap()))?;
             for elem in iter {
-                try!(write!(fmt, ", `{}`", escape_default(elem)));
+                write!(fmt, ", `{}`", escape_default(elem))?;
             }
         }
         Ok(())
@@ -127,12 +127,29 @@ fn __parse__<'input>(__input: &'input str, __state: &mut ParseState<'input>, __p
                 let __pos = __repeat_pos;
                 let __step_res = {
                     let __choice_res = {
-                        let __seq_res = slice_eq(__input, __state, __pos, "\n");
+                        let __seq_res = match if __input.len() > __pos {
+                            let (__ch, __next) = char_range_at(__input, __pos);
+                            match __ch {
+                                '\r' => Matched(__next, ()),
+                                _ => __state.mark_failure(__pos, "[\r]"),
+                            }
+                        } else {
+                            __state.mark_failure(__pos, "[\r]")
+                        } {
+                            Matched(__newpos, _) => Matched(__newpos, ()),
+                            Failed => Matched(__pos, ()),
+                        };
                         match __seq_res {
-                            Matched(__pos, _) => match __parse_directive(__input, __state, __pos, env) {
-                                Matched(__newpos, _) => Matched(__newpos, ()),
-                                Failed => Matched(__pos, ()),
-                            },
+                            Matched(__pos, _) => {
+                                let __seq_res = slice_eq(__input, __state, __pos, "\n");
+                                match __seq_res {
+                                    Matched(__pos, _) => match __parse_directive(__input, __state, __pos, env) {
+                                        Matched(__newpos, _) => Matched(__newpos, ()),
+                                        Failed => Matched(__pos, ()),
+                                    },
+                                    Failed => Failed,
+                                }
+                            }
                             Failed => Failed,
                         }
                     };
@@ -179,11 +196,11 @@ fn __parse_directive<'input>(__input: &'input str, __state: &mut ParseState<'inp
                     let __step_res = if __input.len() > __pos {
                         let (__ch, __next) = char_range_at(__input, __pos);
                         match __ch {
-                            '\n' => __state.mark_failure(__pos, "[^\n]"),
+                            '\r' | '\n' => __state.mark_failure(__pos, "[^\r\n]"),
                             _ => Matched(__next, ()),
                         }
                     } else {
-                        __state.mark_failure(__pos, "[^\n]")
+                        __state.mark_failure(__pos, "[^\r\n]")
                     };
                     match __step_res {
                         Matched(__newpos, __value) => {
