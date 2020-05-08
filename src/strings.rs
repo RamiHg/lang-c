@@ -111,3 +111,27 @@ pub const RESERVED_CLANG: &'static [&'static str] = &[
     "_Null_unspecified",
     "_Nullable",
 ];
+
+// Ref: https://docs.microsoft.com/en-us/cpp/c-language/c-keywords
+#[cfg(target_os = "windows")]
+pub const RESERVED_WINDOWS: &'static [&'static str] = &[
+    "__asm",
+    "__based",
+    "__cdecl",
+    "__declspec",
+    "__except",
+    "__fastcall",
+    "__finally",
+    "__inline",
+    "__int8",
+    "__int16",
+    "__int32",
+    "__int64",
+    "__leave",
+    "__stdcall",
+    "__try",
+    "dllexport",
+    "dllimport",
+    "naked",
+    "thread",
+];

@@ -510,7 +510,8 @@ declaration_specifier_nontype -> DeclarationSpecifier =
     s:type_qualifier { DeclarationSpecifier::TypeQualifier(s) } /
     s:function_specifier { DeclarationSpecifier::Function(s) } /
     s:alignment_specifier { DeclarationSpecifier::Alignment(s) } /
-    s:gnu<attribute_specifier> { DeclarationSpecifier::Extension(s) }
+    s:gnu<attribute_specifier> { DeclarationSpecifier::Extension(s) } /
+    s:ms<ms_extension_specifier_list> { DeclarationSpecifier::Extension(s) }
 
 declaration_typedef -> Vec<Node<DeclarationSpecifier>> =
     s:node<declaration_typedef0> { vec![ s ] }
@@ -603,7 +604,8 @@ type_specifier_nonunique -> TypeSpecifier =
     K<"unsigned"> { TypeSpecifier::Unsigned } /
     K<"_Complex" / gnu<"__complex" "__"?>> { TypeSpecifier::Complex } /
     t:K<ts18661_float_type_specifier> { TypeSpecifier::TS18661Float(t) } /
-    gnu<typeof_specifier>
+    gnu<typeof_specifier> /
+    ms<ms_integer_types>
 
 struct_or_union_specifier -> StructType =
     t:node<struct_or_union> _ i:identifier? _ d:struct_or_union_body {
@@ -807,7 +809,8 @@ pointer0 -> DerivedDeclarator =
 
 pointer_qualifier -> PointerQualifier =
     q:type_qualifier { PointerQualifier::TypeQualifier(q) } /
-    e:gnu<attribute_specifier> { PointerQualifier::Extension(e) }
+    e:gnu<attribute_specifier> { PointerQualifier::Extension(e) } /
+    e:ms<ms_extension_specifier_list> { PointerQualifier::Extension(e) }
 
 ellipsis -> Ellipsis =
     "," _ "..." { Ellipsis::Some } / { Ellipsis::None }
@@ -1380,3 +1383,44 @@ ts18661_float_suffix -> TS18661FloatType =
 clang<E> = &clang_guard e:E { e }
 
 clang_guard = {? if env.extensions_clang { Ok(()) } else { Err("clang extensions disabled") } }
+
+////
+// Windows extensions (-f<no>-ms-extensions in clang)
+////
+
+ms<E> = &ms_guard e:E { e }
+
+ms_guard = {? if env.extensions_windows { Ok(()) } else { Err("Windows extensions disabled") } }
+
+// MS extension integer types. __int8, __int16, __int32, and __int64 are explicity synonyms of char,
+// short, int, and long long, respectively.
+// Ref: https://docs.microsoft.com/en-us/cpp/cpp/data-type-ranges
+ms_integer_types -> TypeSpecifier =
+    K<"__int8"> { TypeSpecifier::Char } /
+    K<"__int16"> { TypeSpecifier::Short } /
+    K<"__int32"> { TypeSpecifier::Int } /
+    K<"__int64"> { TypeSpecifier::Int64 }
+
+ms_extension_specifier_list -> Vec<Node<Extension>> =
+    K<"__declspec"> _ "(" _ a:cs0<node<declspec>> _ ")" { a } /
+    a:list1<node<ms_extension_specifier>> { a }
+
+declspec -> Extension =
+    n:node<attribute_name> _ p:attribute_parameters? {
+        Extension::Declspec(Attribute {
+            name: n,
+            arguments: p.unwrap_or_default(),
+        })
+    }
+
+ms_extension_specifier -> Extension =
+    n:node<$(ms_extension_specifier_keyword)> {
+        Extension::Attribute(Attribute {
+            name: Node::new(n.node.to_string(), n.span),
+            arguments: Default::default(),
+        })
+    }
+
+ms_extension_specifier_keyword =
+    K<"__cdecl"> /
+    K<"__inline">

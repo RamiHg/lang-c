@@ -10,10 +10,12 @@ pub enum Symbol {
     Identifier,
 }
 
+#[derive(Default)]
 pub struct Env {
     symbols: Vec<HashMap<String, Symbol>>,
     pub extensions_gnu: bool,
     pub extensions_clang: bool,
+    pub extensions_windows: bool,
     pub reserved: HashSet<&'static str>,
 }
 
@@ -27,10 +29,9 @@ impl Env {
         let mut reserved = HashSet::default();
         reserved.extend(strings::RESERVED_C11.iter());
         Env {
-            extensions_gnu: false,
-            extensions_clang: false,
             symbols: vec![HashMap::default()],
             reserved: reserved,
+            ..Default::default()
         }
     }
 
@@ -42,9 +43,9 @@ impl Env {
         reserved.extend(strings::RESERVED_GNU.iter());
         Env {
             extensions_gnu: true,
-            extensions_clang: false,
             symbols: vec![symbols],
             reserved: reserved,
+            ..Default::default()
         }
     }
 
@@ -55,11 +56,15 @@ impl Env {
         reserved.extend(strings::RESERVED_C11.iter());
         reserved.extend(strings::RESERVED_GNU.iter());
         reserved.extend(strings::RESERVED_CLANG.iter());
+        #[cfg(target_os = "windows")]
+        reserved.extend(strings::RESERVED_WINDOWS.iter());
         Env {
             extensions_gnu: true,
             extensions_clang: true,
+            extensions_windows: true,
             symbols: vec![symbols],
             reserved: reserved,
+            ..Default::default()
         }
     }
 

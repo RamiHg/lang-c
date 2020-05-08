@@ -1473,6 +1473,7 @@ pub fn visit_extension<'ast, V: Visit<'ast> + ?Sized>(
         Extension::AvailabilityAttribute(ref a) => {
             visitor.visit_availability_attribute(&a.node, &a.span)
         }
+        Extension::Declspec(ref a) => visitor.visit_attribute(a, span),
     }
 }
 

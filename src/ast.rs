@@ -600,6 +600,10 @@ pub enum TypeSpecifier {
     ///
     /// `__complex`, `__complex__` (GNU extension)
     Complex,
+    /// `__int64`
+    ///
+    /// Synonymous with `long long`. (MS extension)
+    Int64,
     /// `_Atomic(typename)`
     Atomic(Node<TypeName>),
     /// `struct identifier { … }`
@@ -1152,11 +1156,16 @@ pub enum Extension {
     ///
     /// [Clang extension](https://clang.llvm.org/docs/AttributeReference.html#availability)
     AvailabilityAttribute(Node<AvailabilityAttribute>),
+    /// __declspec Attribute
+    ///
+    /// [MS Extension](https://docs.microsoft.com/en-us/cpp/cpp/declspec)
+    Declspec(Attribute),
 }
 
 /// Attributes
 ///
 /// [GNU extension](https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html)
+/// [MS Extension](https://docs.microsoft.com/en-us/cpp/cpp/declspec)
 #[derive(Debug, PartialEq, Clone)]
 pub struct Attribute {
     pub name: Node<String>,
