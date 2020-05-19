@@ -13,3 +13,6 @@ categories = [ "parser-implementations" ]
 
 [badges]
 travis-ci = { repository = "vickenty/lang-c" }
+
+[dependencies]
+peg = {version = "0.6"}

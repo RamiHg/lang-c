@@ -171,10 +171,10 @@ pub fn parse_preprocessed(config: &Config, source: String) -> Result<Parse, Synt
         }),
         Err(err) => Err(SyntaxError {
             source: source,
-            line: err.line,
-            column: err.column,
-            offset: err.offset,
-            expected: err.expected,
+            line: err.location.line,
+            column: err.location.column,
+            offset: err.location.offset,
+            expected: err.expected.tokens().collect(),
         }),
     }
 }

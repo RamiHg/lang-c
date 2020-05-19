@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 
 use ast::*;
@@ -12,7 +13,7 @@ pub enum Symbol {
 
 #[derive(Default)]
 pub struct Env {
-    symbols: Vec<HashMap<String, Symbol>>,
+    symbols: RefCell<Vec<HashMap<String, Symbol>>>,
     pub extensions_gnu: bool,
     pub extensions_clang: bool,
     pub extensions_windows: bool,
@@ -29,7 +30,7 @@ impl Env {
         let mut reserved = HashSet::default();
         reserved.extend(strings::RESERVED_C11.iter());
         Env {
-            symbols: vec![HashMap::default()],
+            symbols: vec![HashMap::default()].into(),
             reserved: reserved,
             ..Default::default()
         }
@@ -43,7 +44,7 @@ impl Env {
         reserved.extend(strings::RESERVED_GNU.iter());
         Env {
             extensions_gnu: true,
-            symbols: vec![symbols],
+            symbols: vec![symbols].into(),
             reserved: reserved,
             ..Default::default()
         }
@@ -62,22 +63,25 @@ impl Env {
             extensions_gnu: true,
             extensions_clang: true,
             extensions_windows: true,
-            symbols: vec![symbols],
+            symbols: vec![symbols].into(),
             reserved: reserved,
             ..Default::default()
         }
     }
 
-    pub fn enter_scope(&mut self) {
-        self.symbols.push(HashMap::new());
+    pub fn enter_scope(&self) {
+        self.symbols.borrow_mut().push(HashMap::new());
     }
 
-    pub fn leave_scope(&mut self) {
-        self.symbols.pop().expect("more scope pops than pushes");
+    pub fn leave_scope(&self) {
+        self.symbols
+            .borrow_mut()
+            .pop()
+            .expect("more scope pops than pushes");
     }
 
     pub fn is_typename(&self, ident: &str) -> bool {
-        for scope in self.symbols.iter().rev() {
+        for scope in self.symbols.borrow().iter().rev() {
             if let Some(symbol) = scope.get(ident) {
                 return *symbol == Symbol::Typename;
             }
@@ -85,15 +89,15 @@ impl Env {
         false
     }
 
-    pub fn handle_declarator(&mut self, d: &Node<Declarator>, sym: Symbol) {
+    pub fn handle_declarator(&self, d: &Node<Declarator>, sym: Symbol) {
         if let Some(name) = find_declarator_name(&d.node.kind.node) {
             self.add_symbol(name, sym)
         }
     }
 
-    pub fn add_symbol(&mut self, s: &str, symbol: Symbol) {
-        let scope = self
-            .symbols
+    pub fn add_symbol(&self, s: &str, symbol: Symbol) {
+        let mut symbols = self.symbols.borrow_mut();
+        let scope = symbols
             .last_mut()
             .expect("at least one scope should be always present");
         scope.insert(s.to_string(), symbol);
