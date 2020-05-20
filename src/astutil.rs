@@ -57,7 +57,7 @@ pub fn concat<T>(mut a: Vec<T>, b: Vec<T>) -> Vec<T> {
 }
 
 pub fn infix(
-    node: Node<()>,
+    op_span: Span,
     op: BinaryOperator,
     lhs: Node<Expression>,
     rhs: Node<Expression>,
@@ -66,9 +66,41 @@ pub fn infix(
     Node::new(
         Expression::BinaryOperator(Box::new(Node::new(
             BinaryOperatorExpression {
-                operator: Node::new(op, node.span),
+                operator: Node::new(op, op_span),
                 lhs: Box::new(lhs),
                 rhs: Box::new(rhs),
+            },
+            span,
+        ))),
+        span,
+    )
+}
+
+pub fn prefix(op: UnaryOperator, op_span: Span, expr: Node<Expression>) -> Node<Expression> {
+    let span = Span::span(op_span.start, expr.span.end);
+    Node::new(
+        Expression::UnaryOperator(Box::new(Node::new(
+            UnaryOperatorExpression {
+                operator: Node::new(op, op_span),
+                operand: Box::new(expr),
+            },
+            span,
+        ))),
+        span,
+    )
+}
+
+pub fn cast_expr(
+    lparen_span: Span,
+    type_name: Node<TypeName>,
+    expr: Node<Expression>,
+) -> Node<Expression> {
+    let span = Span::span(lparen_span.start, expr.span.end);
+    Node::new(
+        Expression::Cast(Box::new(Node::new(
+            CastExpression {
+                type_name: type_name,
+                expression: Box::new(expr),
             },
             span,
         ))),

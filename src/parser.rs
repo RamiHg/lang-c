@@ -224,7 +224,7 @@ rule generic_association() -> GenericAssociation =
 
 // rule postfix_expression() -> Box<Node<Expression>> = box(<node(<postfix_expression0()>)>)
 
-#[cache]
+// #[cache]
 rule postfix_expression0() -> Expression =
     e:node(<postfix_expression1()>) _ t:list0(<node(<postfix_expressionT()>)>) { apply_ops(t, e).node }
 
@@ -267,42 +267,74 @@ rule compound_literal_inner() -> CompoundLiteral =
 // 6.5.3 Unary operators
 ////
 
-rule unary_expression() -> Box<Node<Expression>> = box(<node(<unary_expression0()>)>)
+////
+// 6.5.4 Cast expressions
+////
 
-rule unary_expression0() -> Expression =
-    postfix_expression0() /
-    unary_prefix() /
-    unary_cast() /
-    sizeof_expression() /
-    alignof_expression() /
-    gnu(<Ks("__extension__")>) _ e:unary_expression0(){ e }
+////
+// 6.5.5 -- 6.5.14 Binary operators
+////
 
-rule unary_prefix() -> Expression =
-    n:node(<unary_prefix_inner()>) { Expression::UnaryOperator(Box::new(n)) }
+rule binary_expression() -> Box<Node<Expression>> = box(<binary_expression0()>)
 
-rule unary_prefix_inner() -> UnaryOperatorExpression =
-    op:node(<prefix_operator()>) _ e:unary_expression(){
-        UnaryOperatorExpression {
-            operator: op,
-            operand: e,
-        }
+rule binary_expression0() -> Node<Expression> = precedence! {
+  x:@ _ "?" _ b:node(<expression0()>) _ ":" _ y:(@) {
+    let span = Span::span(x.span.start, y.span.end);
+    Node::new(Expression::Conditional(Box::new(Node::new(ConditionalExpression {
+        condition: Box::new(x),
+        then_expression: Box::new(b),
+        else_expression: Box::new(y),
+    }, span))), span)
+  }
+--
+  x:(@) o:infixs("||") y:@ { infix(o, BinaryOperator::LogicalOr, x, y) }
+--
+  x:(@) o:infixs("&&") y:@ { infix(o, BinaryOperator::LogicalAnd, x, y) }
+--
+  x:(@) o:infixs("|") y:@ { infix(o, BinaryOperator::BitwiseOr, x, y) }
+--
+  x:(@) o:infixs("^") y:@ { infix(o, BinaryOperator::BitwiseXor, x, y) }
+--
+  x:(@) o:infix(<"&"!"&">) y:@ { infix(o.span, BinaryOperator::BitwiseAnd, x, y) }
+--
+  x:(@) o:infixs("==") y:@ { infix(o, BinaryOperator::Equals, x, y) }
+    x:(@) o:infixs("!=") y:@ { infix(o, BinaryOperator::NotEquals, x, y) }
+--
+  x:(@) o:infixs("<") y:@ { infix(o, BinaryOperator::Less, x, y) }
+    x:(@) o:infixs(">") y:@ { infix(o, BinaryOperator::Greater, x, y) }
+    x:(@) o:infixs("<=") y:@ { infix(o, BinaryOperator::LessOrEqual, x, y) }
+    x:(@) o:infixs(">=") y:@ { infix(o, BinaryOperator::GreaterOrEqual, x, y) }
+--
+  x:(@) o:infixs("<<") y:@ { infix(o, BinaryOperator::ShiftLeft, x, y) }
+    x:(@) o:infixs(">>") y:@ { infix(o, BinaryOperator::ShiftRight, x, y) }
+--
+  x:(@) o:infixs("+") y:@ { infix(o, BinaryOperator::Plus, x, y) }
+    x:(@) o:infixs("-") y:@ { infix(o, BinaryOperator::Minus, x, y) }
+--
+  x:(@) o:infixs("*") y:@ { infix(o, BinaryOperator::Multiply, x, y) }
+    x:(@) o:infixs("/") y:@ { infix(o, BinaryOperator::Divide, x, y) }
+    x:(@) o:infixs("%") y:@ { infix(o, BinaryOperator::Modulo, x, y) }
+--
+    sp:infixs("++") x:(@) { prefix(UnaryOperator::PreIncrement, sp, x) }
+    sp:infixs("--") x:(@) { prefix(UnaryOperator::PreDecrement, sp, x) }
+    sp:infixs("sizeof") x:(@) { prefix(UnaryOperator::SizeOf, sp, x) }
+    op:infix(<unary_operator()>) _ x:(@) { prefix(op.node, op.span, x) }
+    sp:infixs("(")  t:type_name() _ ")" _ x:(@) { cast_expr(sp, t, x) }
+    l:position!() "sizeof" _ "(" _ t:type_name() _ ")" r:position!() {
+        Node::new(Expression::SizeOf(Box::new(t)), Span::span(l, r))
     }
-
-rule prefix_operator() -> UnaryOperator =
-    "++" { UnaryOperator::PreIncrement } /
-    "--" { UnaryOperator::PreDecrement } /
-    Ks("sizeof") { UnaryOperator::SizeOf }
-
-rule unary_cast() -> Expression =
-    n:node(<unary_cast_inner()>) { Expression::UnaryOperator(Box::new(n)) }
-
-rule unary_cast_inner() -> UnaryOperatorExpression =
-    op:node(<unary_operator()>) _ e:cast_expression(){
-        UnaryOperatorExpression {
-            operator: op,
-            operand: e,
-        }
+    l:position!() "_Alignof" _ "(" t:type_name() _ ")" r:position!() {
+        Node::new(Expression::AlignOf(Box::new(t)), Span::span(l, r))
     }
+    l:position!() gnu(<"__alignof" "__"?>) _ "(" t:type_name() _ ")" r:position!() {
+        Node::new(Expression::AlignOf(Box::new(t)), Span::span(l, r))
+    }
+    gnu(<Ks("__extension__")>) _ x:(@) { x }
+--
+    x:(@) lb:infixs("[") y:node(<expression0()>) rb:infixs("]") { infix(Span::span(lb.start, rb.end), BinaryOperator::Index, x, y) }
+--
+    e:binary_operand() { e }
+}
 
 rule unary_operator() -> UnaryOperator =
     "&"!"&" { UnaryOperator::Address } /
@@ -312,98 +344,38 @@ rule unary_operator() -> UnaryOperator =
     "~" { UnaryOperator::Complement } /
     "!" { UnaryOperator::Negate }
 
-rule sizeof_expression() -> Expression =
-    Ks("sizeof") _ "(" _ t:type_name() _ ")" {
-        Expression::SizeOf(Box::new(t))
-    }
-
-rule alignof_expression() -> Expression =
-    (Ks("_Alignof") / gnu(<"__alignof" "__"?>)) _ "(" _ t:type_name() _ ")" {
-        Expression::AlignOf(Box::new(t))
-    }
-
-////
-// 6.5.4 Cast expressions
-////
-
-rule cast_expression() -> Box<Node<Expression>> = box(<node(<cast_expression0()>)>)
-
-rule cast_expression0() -> Expression =
-    c:node(<cast_expression_inner()>) { Expression::Cast(Box::new(c)) } /
-    unary_expression0()
-
-rule cast_expression_inner() -> CastExpression =
-    "(" _ t:type_name() _ ")" _ e:cast_expression(){
-        CastExpression {
-            type_name: t,
-            expression: e,
-        }
-    }
-
-////
-// 6.5.5 -- 6.5.14 Binary operators
-////
-
-rule binary_expression() -> Box<Node<Expression>> = box(<binary_expression0()>)
-
-rule binary_expression0() -> Node<Expression> = precedence! {
-  x:(@) o:infix(<"||">) y:@ { infix(o, BinaryOperator::LogicalOr, x, y) }
---
-  x:(@) o:infix(<"&&">) y:@ { infix(o, BinaryOperator::LogicalAnd, x, y) }
---
-  x:(@) o:infix(<"|">) y:@ { infix(o, BinaryOperator::BitwiseOr, x, y) }
---
-  x:(@) o:infix(<"^">) y:@ { infix(o, BinaryOperator::BitwiseXor, x, y) }
---
-  x:(@) o:infix(<"&"!"&">) y:@ { infix(o, BinaryOperator::BitwiseAnd, x, y) }
---
-  x:(@) o:infix(<"==">) y:@ { infix(o, BinaryOperator::Equals, x, y) }
-    x:(@) o:infix(<"!=">) y:@ { infix(o, BinaryOperator::NotEquals, x, y) }
---
-  x:(@) o:infix(<"<">) y:@ { infix(o, BinaryOperator::Less, x, y) }
-    x:(@) o:infix(<">">) y:@ { infix(o, BinaryOperator::Greater, x, y) }
-    x:(@) o:infix(<"<=">) y:@ { infix(o, BinaryOperator::LessOrEqual, x, y) }
-    x:(@) o:infix(<">=">) y:@ { infix(o, BinaryOperator::GreaterOrEqual, x, y) }
---
-  x:(@) o:infix(<"<<">) y:@ { infix(o, BinaryOperator::ShiftLeft, x, y) }
-    x:(@) o:infix(<">>">) y:@ { infix(o, BinaryOperator::ShiftRight, x, y) }
---
-  x:(@) o:infix(<"+">) y:@ { infix(o, BinaryOperator::Plus, x, y) }
-    x:(@) o:infix(<"-">) y:@ { infix(o, BinaryOperator::Minus, x, y) }
---
-  x:(@) o:infix(<"*">) y:@ { infix(o, BinaryOperator::Multiply, x, y) }
-    x:(@) o:infix(<"/">) y:@ { infix(o, BinaryOperator::Divide, x, y) }
-    x:(@) o:infix(<"%">) y:@ { infix(o, BinaryOperator::Modulo, x, y) }
---
-  e:binary_operand() { e }
-}
 
 rule infix<T>(ex: rule<T>) -> Node<T> = _ n:node(<ex()>) _ { n }
+rule infixs(ex: &'static str) -> Span = _ n:node(<##parse_string_literal(ex)>) _ { n.span }
 
-rule binary_operand() -> Node<Expression> = node(<cast_expression0()>)
+rule binary_operand() -> Node<Expression> = node(<postfix_expression0()>)
 
 ////
 // 6.5.15 Conditional operator
 ////
 
+// rule conditional_expression() -> Box<Node<Expression>> = box(<node(<conditional_expression0()>)>)
+
+// rule conditional_expression0() -> Expression =
+//     a:binary_expression0() _ t:conditional_expressionT()? {
+//         if let Some((b, c)) = t {
+//             let span = Span::span(a.span.start, c.span.end);
+//             Expression::Conditional(Box::new(Node::new(ConditionalExpression {
+//                 condition: Box::new(a),
+//                 then_expression: b,
+//                 else_expression: c,
+//             }, span)))
+//         } else {
+//             a.node
+//         }
+//     }
+
+// rule conditional_expressionT() -> (Box<Node<Expression>>, Box<Node<Expression>>) =
+//     "?" _ a:node(<expression0()>) _ ":" _ b:node(<conditional_expression0()>) { (Box::new(a), Box::new(b)) }
+
 rule conditional_expression() -> Box<Node<Expression>> = box(<node(<conditional_expression0()>)>)
+rule conditional_expression0() -> Expression = e:binary_expression0() {e.node}
 
-rule conditional_expression0() -> Expression =
-    a:binary_expression0() _ t:conditional_expressionT()? {
-        if let Some((b, c)) = t {
-            let span = Span::span(a.span.start, c.span.end);
-            Expression::Conditional(Box::new(Node::new(ConditionalExpression {
-                condition: Box::new(a),
-                then_expression: b,
-                else_expression: c,
-            }, span)))
-        } else {
-            a.node
-        }
-    }
-
-rule conditional_expressionT() -> (Box<Node<Expression>>, Box<Node<Expression>>) =
-    "?" _ a:node(<expression0()>) _ ":" _ b:node(<conditional_expression0()>) { (Box::new(a), Box::new(b)) }
 
 ////
 // 6.5.16 Assignment operators
@@ -416,7 +388,7 @@ rule assignment_expression0() -> Expression =
     conditional_expression0()
 
 rule assignment_expression_inner() -> BinaryOperatorExpression =
-    a:unary_expression() _ op:node(<assignment_operator()>) _ b:assignment_expression(){
+    a:conditional_expression() _ op:node(<assignment_operator()>) _ b:assignment_expression(){
         BinaryOperatorExpression {
             operator: op,
             lhs: a,
