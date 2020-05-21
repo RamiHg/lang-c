@@ -224,7 +224,6 @@ rule generic_association() -> GenericAssociation =
 
 // rule postfix_expression() -> Box<Node<Expression>> = box(<node(<postfix_expression0()>)>)
 
-#[cache]
 rule postfix_expression0() -> Expression =
     e:node(<postfix_expression1()>) _ t:list0(<node(<postfix_expressionT()>)>) { apply_ops(t, e).node }
 
@@ -332,6 +331,7 @@ rule cast_expression0() -> Expression =
     c:node(<cast_expression_inner()>) { Expression::Cast(Box::new(c)) } /
     unary_expression0()
 
+
 rule cast_expression_inner() -> CastExpression =
     "(" _ t:type_name() _ ")" _ e:cast_expression(){
         CastExpression {
@@ -343,6 +343,21 @@ rule cast_expression_inner() -> CastExpression =
 ////
 // 6.5.5 -- 6.5.14 Binary operators
 ////
+
+rule rel_op() -> BinaryOperator =
+    "<=" { BinaryOperator::LessOrEqual } /
+    ">=" { BinaryOperator::GreaterOrEqual } /
+    "<" { BinaryOperator::Less } /
+    ">" { BinaryOperator::Greater }
+
+rule mul_div_mod_op() -> BinaryOperator =
+    "*" { BinaryOperator::Multiply } /
+    "/" { BinaryOperator::Divide } /
+    "%" { BinaryOperator::Modulo }
+
+rule plus_minus_op() -> BinaryOperator =
+    "+" { BinaryOperator::Plus } /
+    "-" { BinaryOperator::Minus }
 
 rule binary_expression() -> Box<Node<Expression>> = box(<binary_expression0()>)
 
@@ -357,10 +372,10 @@ rule binary_expression0() -> Node<Expression> = precedence! {
 --
   x:(@) o:infix(<"&"!"&">) y:@ { infix(o, BinaryOperator::BitwiseAnd, x, y) }
 --
-  x:(@) o:infix(<"==">) y:@ { infix(o, BinaryOperator::Equals, x, y) }
+    x:(@) o:infix(<"==">) y:@ { infix(o, BinaryOperator::Equals, x, y) }
     x:(@) o:infix(<"!=">) y:@ { infix(o, BinaryOperator::NotEquals, x, y) }
 --
-  x:(@) o:infix(<"<">) y:@ { infix(o, BinaryOperator::Less, x, y) }
+    x:(@) o:infix(<"<">) y:@ { infix(o, BinaryOperator::Less, x, y) }
     x:(@) o:infix(<">">) y:@ { infix(o, BinaryOperator::Greater, x, y) }
     x:(@) o:infix(<"<=">) y:@ { infix(o, BinaryOperator::LessOrEqual, x, y) }
     x:(@) o:infix(<">=">) y:@ { infix(o, BinaryOperator::GreaterOrEqual, x, y) }
@@ -368,12 +383,9 @@ rule binary_expression0() -> Node<Expression> = precedence! {
   x:(@) o:infix(<"<<">) y:@ { infix(o, BinaryOperator::ShiftLeft, x, y) }
     x:(@) o:infix(<">>">) y:@ { infix(o, BinaryOperator::ShiftRight, x, y) }
 --
-  x:(@) o:infix(<"+">) y:@ { infix(o, BinaryOperator::Plus, x, y) }
-    x:(@) o:infix(<"-">) y:@ { infix(o, BinaryOperator::Minus, x, y) }
+    x:(@) _ o:node(<plus_minus_op()>) _ y:@ { infix2(o, x, y) }
 --
-  x:(@) o:infix(<"*">) y:@ { infix(o, BinaryOperator::Multiply, x, y) }
-    x:(@) o:infix(<"/">) y:@ { infix(o, BinaryOperator::Divide, x, y) }
-    x:(@) o:infix(<"%">) y:@ { infix(o, BinaryOperator::Modulo, x, y) }
+    x:(@) _ o:node(<mul_div_mod_op()>) _ y:@ { infix2(o, x, y) }
 --
   e:binary_operand() { e }
 }
@@ -412,16 +424,26 @@ rule conditional_expressionT() -> (Box<Node<Expression>>, Box<Node<Expression>>)
 rule assignment_expression() -> Box<Node<Expression>> = box(<node(<assignment_expression0()>)>)
 
 rule assignment_expression0() -> Expression =
-    n:node(<assignment_expression_inner()>) { Expression::BinaryOperator(Box::new(n)) } /
-    conditional_expression0()
 
-rule assignment_expression_inner() -> BinaryOperatorExpression =
-    a:unary_expression() _ op:node(<assignment_operator()>) _ b:assignment_expression(){
-        BinaryOperatorExpression {
-            operator: op,
-            lhs: a,
-            rhs: b,
+    // n:node(<assignment_expression_inner()>) { Expression::BinaryOperator(Box::new(n)) } /
+    c:node(<conditional_expression0()>) _ a:assignment_expression_inner()? {
+        if let Some((op, rhs)) = a {
+            let span = Span::span(c.span.start, rhs.span.end);
+            Expression::BinaryOperator(Box::new(
+                Node::new(BinaryOperatorExpression {
+                    operator: op,
+                    lhs: Box::new(c),
+                    rhs: rhs,
+                }, span)
+            ))
+        } else {
+            c.node
         }
+    }
+
+rule assignment_expression_inner() -> (Node<BinaryOperator>, Box<Node<Expression>>) =
+    _ op:node(<assignment_operator()>) _ b:assignment_expression() {
+        (op, b)
     }
 
 rule assignment_operator() -> BinaryOperator =

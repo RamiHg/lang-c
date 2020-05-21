@@ -76,6 +76,25 @@ pub fn infix(
     )
 }
 
+pub fn infix2(
+    op: Node<BinaryOperator>,
+    lhs: Node<Expression>,
+    rhs: Node<Expression>,
+) -> Node<Expression> {
+    let span = Span::span(lhs.span.start, rhs.span.end);
+    Node::new(
+        Expression::BinaryOperator(Box::new(Node::new(
+            BinaryOperatorExpression {
+                operator: op,
+                lhs: Box::new(lhs),
+                rhs: Box::new(rhs),
+            },
+            span,
+        ))),
+        span,
+    )
+}
+
 pub fn with_ext(mut d: Node<Declarator>, e: Option<Vec<Node<Extension>>>) -> Node<Declarator> {
     if let Some(e) = e {
         d.node.extensions.extend(e);
