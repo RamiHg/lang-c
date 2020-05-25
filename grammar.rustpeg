@@ -595,14 +595,14 @@ type_specifier_nonunique -> TypeSpecifier =
     ms<ms_integer_types>
 
 struct_or_union_specifier -> StructType =
-    t:node<struct_or_union> _ i:identifier? _ d:struct_or_union_body {
+    t:node<struct_or_union> _ ms<ms_extension_specifier_list>? _ i:identifier? _ d:struct_or_union_body {
         StructType {
             kind: t,
             identifier: i,
             declarations: d,
         }
     } /
-    t:node<struct_or_union> _ i:identifier {
+    t:node<struct_or_union> _ ms<ms_extension_specifier_list>? _ i:identifier {
         StructType {
             kind: t,
             identifier: Some(i),
@@ -742,7 +742,7 @@ declarator0 -> Declarator =
 
 direct_declarator -> DeclaratorKind =
     i:identifier { DeclaratorKind::Identifier(i) } /
-    "(" _ d:declarator _ ")" { DeclaratorKind::Declarator(Box::new(d)) }
+    "(" _ ms<ms_extension_specifier_list>? _ d:declarator _ ")" { DeclaratorKind::Declarator(Box::new(d)) }
 
 derived_declarator -> DerivedDeclarator =
     "[" _ a:node<array_declarator> { DerivedDeclarator::Array(a) } /
@@ -861,7 +861,7 @@ abstract_declarator0 -> Declarator =
     }
 
 direct_abstract_declarator -> DeclaratorKind =
-    "(" _ d:abstract_declarator _ ")" { DeclaratorKind::Declarator(Box::new(d)) }
+    "(" _ ms<ms_extension_specifier_list>? _ d:abstract_declarator _ ")" { DeclaratorKind::Declarator(Box::new(d)) }
 
 derived_abstract_declarator -> Node<DerivedDeclarator> = node<derived_abstract_declarator0>
 
@@ -1127,6 +1127,9 @@ pub translation_unit -> TranslationUnit =
     directive? _ d:list0<node<external_declaration>> _ { TranslationUnit(d) }
 
 external_declaration -> ExternalDeclaration =
+    ";"? e:external_declaration0 ";"? { e }
+
+external_declaration0 -> ExternalDeclaration =
     d:declaration { ExternalDeclaration::Declaration(d) } /
     s:static_assert { ExternalDeclaration::StaticAssert(s) } /
     d:scoped<node<function_definition>> { ExternalDeclaration::FunctionDefinition(d) }
@@ -1142,7 +1145,6 @@ function_definition -> FunctionDefinition =
             statement: d,
         }
     }
-
 ////
 // GNU extensions
 ////
@@ -1401,13 +1403,18 @@ declspec -> Extension =
     }
 
 ms_extension_specifier -> Extension =
-    n:node<$(ms_extension_specifier_keyword)> {
+    ms_extension_specifier_keyword<"__cdecl" > /
+    ms_extension_specifier_keyword<"__inline"> /
+    ms_extension_specifier_keyword<"__ptr32"> /
+    ms_extension_specifier_keyword<"__ptr64"> /
+    ms_extension_specifier_keyword<"__unaligned"> /
+    ms_extension_specifier_keyword<"__stdcall"> /
+    ms_extension_specifier_keyword<"__forceinline">
+
+ms_extension_specifier_keyword<T> =
+    n:node<$(K<T>)> {
         Extension::Attribute(Attribute {
             name: Node::new(n.node.to_string(), n.span),
             arguments: Default::default(),
         })
     }
-
-ms_extension_specifier_keyword =
-    K<"__cdecl"> /
-    K<"__inline">
