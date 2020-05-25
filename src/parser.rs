@@ -109,11 +109,10 @@ struct ParseState<'input> {
     suppress_fail: usize,
     expected: ::std::collections::HashSet<&'static str>,
     _phantom: ::std::marker::PhantomData<&'input ()>,
-    postfix_expression0_cache: ::std::collections::HashMap<usize, RuleResult<Expression>>,
 }
 impl<'input> ParseState<'input> {
     fn new() -> ParseState<'input> {
-        ParseState { max_err_pos: 0, suppress_fail: 0, expected: ::std::collections::HashSet::new(), _phantom: ::std::marker::PhantomData, postfix_expression0_cache: ::std::collections::HashMap::new() }
+        ParseState { max_err_pos: 0, suppress_fail: 0, expected: ::std::collections::HashSet::new(), _phantom: ::std::marker::PhantomData }
     }
 }
 
@@ -2153,10 +2152,7 @@ fn __parse_postfix_expression<'input>(__input: &'input str, __state: &mut ParseS
 
 fn __parse_postfix_expression0<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize, env: &mut Env) -> RuleResult<Expression> {
     #![allow(non_snake_case, unused)]
-    if let Some(entry) = __state.postfix_expression0_cache.get(&__pos) {
-        return entry.clone();
-    }
-    let __rule_result = {
+    {
         let __seq_res = {
             let __seq_res = Matched(__pos, __pos);
             match __seq_res {
@@ -2242,9 +2238,7 @@ fn __parse_postfix_expression0<'input>(__input: &'input str, __state: &mut Parse
             }
             Failed => Failed,
         }
-    };
-    __state.postfix_expression0_cache.insert(__pos, __rule_result.clone());
-    __rule_result
+    }
 }
 
 fn __parse_postfix_expression1<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize, env: &mut Env) -> RuleResult<Expression> {
@@ -4532,77 +4526,87 @@ fn __parse_assignment_expression<'input>(__input: &'input str, __state: &mut Par
 fn __parse_assignment_expression0<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize, env: &mut Env) -> RuleResult<Expression> {
     #![allow(non_snake_case, unused)]
     {
-        let __choice_res = {
-            let __seq_res = {
-                let __seq_res = Matched(__pos, __pos);
-                match __seq_res {
-                    Matched(__pos, l) => {
-                        let __seq_res = __parse_assignment_expression_inner(__input, __state, __pos, env);
-                        match __seq_res {
-                            Matched(__pos, e) => {
-                                let __seq_res = Matched(__pos, __pos);
-                                match __seq_res {
-                                    Matched(__pos, r) => Matched(__pos, { Node::new(e, Span::span(l, r)) }),
-                                    Failed => Failed,
-                                }
+        let __seq_res = {
+            let __seq_res = Matched(__pos, __pos);
+            match __seq_res {
+                Matched(__pos, l) => {
+                    let __seq_res = __parse_conditional_expression0(__input, __state, __pos, env);
+                    match __seq_res {
+                        Matched(__pos, e) => {
+                            let __seq_res = Matched(__pos, __pos);
+                            match __seq_res {
+                                Matched(__pos, r) => Matched(__pos, { Node::new(e, Span::span(l, r)) }),
+                                Failed => Failed,
                             }
+                        }
+                        Failed => Failed,
+                    }
+                }
+                Failed => Failed,
+            }
+        };
+        match __seq_res {
+            Matched(__pos, c) => {
+                let __seq_res = __parse__(__input, __state, __pos, env);
+                match __seq_res {
+                    Matched(__pos, _) => {
+                        let __seq_res = match __parse_assignment_expression_inner(__input, __state, __pos, env) {
+                            Matched(__newpos, __value) => Matched(__newpos, Some(__value)),
+                            Failed => Matched(__pos, None),
+                        };
+                        match __seq_res {
+                            Matched(__pos, a) => Matched(__pos, {
+                                if let Some((op, rhs)) = a {
+                                    let span = Span::span(c.span.start, rhs.span.end);
+                                    Expression::BinaryOperator(Box::new(Node::new(BinaryOperatorExpression { operator: op, lhs: Box::new(c), rhs: rhs }, span)))
+                                } else {
+                                    c.node
+                                }
+                            }),
                             Failed => Failed,
                         }
                     }
                     Failed => Failed,
                 }
-            };
-            match __seq_res {
-                Matched(__pos, n) => Matched(__pos, { Expression::BinaryOperator(Box::new(n)) }),
-                Failed => Failed,
             }
-        };
-        match __choice_res {
-            Matched(__pos, __value) => Matched(__pos, __value),
-            Failed => __parse_conditional_expression0(__input, __state, __pos, env),
+            Failed => Failed,
         }
     }
 }
 
-fn __parse_assignment_expression_inner<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize, env: &mut Env) -> RuleResult<BinaryOperatorExpression> {
+fn __parse_assignment_expression_inner<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize, env: &mut Env) -> RuleResult<(Node<BinaryOperator>, Box<Node<Expression>>)> {
     #![allow(non_snake_case, unused)]
     {
-        let __seq_res = __parse_unary_expression(__input, __state, __pos, env);
+        let __seq_res = __parse__(__input, __state, __pos, env);
         match __seq_res {
-            Matched(__pos, a) => {
-                let __seq_res = __parse__(__input, __state, __pos, env);
-                match __seq_res {
-                    Matched(__pos, _) => {
-                        let __seq_res = {
-                            let __seq_res = Matched(__pos, __pos);
+            Matched(__pos, _) => {
+                let __seq_res = {
+                    let __seq_res = Matched(__pos, __pos);
+                    match __seq_res {
+                        Matched(__pos, l) => {
+                            let __seq_res = __parse_assignment_operator(__input, __state, __pos, env);
                             match __seq_res {
-                                Matched(__pos, l) => {
-                                    let __seq_res = __parse_assignment_operator(__input, __state, __pos, env);
+                                Matched(__pos, e) => {
+                                    let __seq_res = Matched(__pos, __pos);
                                     match __seq_res {
-                                        Matched(__pos, e) => {
-                                            let __seq_res = Matched(__pos, __pos);
-                                            match __seq_res {
-                                                Matched(__pos, r) => Matched(__pos, { Node::new(e, Span::span(l, r)) }),
-                                                Failed => Failed,
-                                            }
-                                        }
+                                        Matched(__pos, r) => Matched(__pos, { Node::new(e, Span::span(l, r)) }),
                                         Failed => Failed,
                                     }
                                 }
                                 Failed => Failed,
                             }
-                        };
+                        }
+                        Failed => Failed,
+                    }
+                };
+                match __seq_res {
+                    Matched(__pos, op) => {
+                        let __seq_res = __parse__(__input, __state, __pos, env);
                         match __seq_res {
-                            Matched(__pos, op) => {
-                                let __seq_res = __parse__(__input, __state, __pos, env);
+                            Matched(__pos, _) => {
+                                let __seq_res = __parse_assignment_expression(__input, __state, __pos, env);
                                 match __seq_res {
-                                    Matched(__pos, _) => {
-                                        let __seq_res = __parse_assignment_expression(__input, __state, __pos, env);
-                                        match __seq_res {
-                                            Matched(__pos, b) => Matched(__pos, { BinaryOperatorExpression { operator: op, lhs: a, rhs: b } }),
-                                            Failed => Failed,
-                                        }
-                                    }
+                                    Matched(__pos, b) => Matched(__pos, { (op, b) }),
                                     Failed => Failed,
                                 }
                             }
