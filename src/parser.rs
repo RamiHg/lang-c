@@ -5030,15 +5030,62 @@ fn __parse_declaration0<'input>(__input: &'input str, __state: &mut ParseState<'
 fn __parse_declaration1<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize, env: &mut Env) -> RuleResult<(Vec<Node<DeclarationSpecifier>>, Vec<Node<InitDeclarator>>)> {
     #![allow(non_snake_case, unused)]
     {
-        let __seq_res = __parse_declaration_specifiers_unique(__input, __state, __pos, env);
-        match __seq_res {
-            Matched(__pos, h) => {
-                let __seq_res = __parse__(__input, __state, __pos, env);
+        let __choice_res = {
+            let __seq_res = __parse_declaration_specifiers_typedef(__input, __state, __pos, env);
+            match __seq_res {
+                Matched(__pos, d) => {
+                    let __seq_res = __parse__(__input, __state, __pos, env);
+                    match __seq_res {
+                        Matched(__pos, _) => {
+                            let __seq_res = __parse_declaration_type_declarators(__input, __state, __pos, env);
+                            match __seq_res {
+                                Matched(__pos, t) => Matched(__pos, { (d, t) }),
+                                Failed => Failed,
+                            }
+                        }
+                        Failed => Failed,
+                    }
+                }
+                Failed => Failed,
+            }
+        };
+        match __choice_res {
+            Matched(__pos, __value) => Matched(__pos, __value),
+            Failed => {
+                let __seq_res = __parse_declaration_specifiers(__input, __state, __pos, env);
                 match __seq_res {
-                    Matched(__pos, _) => {
-                        let __seq_res = __parse_declaration2(__input, __state, __pos, env);
+                    Matched(__pos, d) => {
+                        let __seq_res = __parse__(__input, __state, __pos, env);
                         match __seq_res {
-                            Matched(__pos, t) => Matched(__pos, { (concat(h, t.0), t.1) }),
+                            Matched(__pos, _) => {
+                                let __seq_res = __parse_declaration_init_declarators(__input, __state, __pos, env);
+                                match __seq_res {
+                                    Matched(__pos, t) => Matched(__pos, { (d, t) }),
+                                    Failed => Failed,
+                                }
+                            }
+                            Failed => Failed,
+                        }
+                    }
+                    Failed => Failed,
+                }
+            }
+        }
+    }
+}
+
+fn __parse_declaration_unique_type<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize, env: &mut Env) -> RuleResult<Node<DeclarationSpecifier>> {
+    #![allow(non_snake_case, unused)]
+    {
+        let __seq_res = Matched(__pos, __pos);
+        match __seq_res {
+            Matched(__pos, l) => {
+                let __seq_res = __parse_declaration_specifier_unique_type0(__input, __state, __pos, env);
+                match __seq_res {
+                    Matched(__pos, e) => {
+                        let __seq_res = Matched(__pos, __pos);
+                        match __seq_res {
+                            Matched(__pos, r) => Matched(__pos, { Node::new(e, Span::span(l, r)) }),
                             Failed => Failed,
                         }
                     }
@@ -5050,19 +5097,118 @@ fn __parse_declaration1<'input>(__input: &'input str, __state: &mut ParseState<'
     }
 }
 
-fn __parse_declaration2<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize, env: &mut Env) -> RuleResult<(Vec<Node<DeclarationSpecifier>>, Vec<Node<InitDeclarator>>)> {
+fn __parse_declaration_nonunique_type<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize, env: &mut Env) -> RuleResult<Node<DeclarationSpecifier>> {
+    #![allow(non_snake_case, unused)]
+    {
+        let __seq_res = Matched(__pos, __pos);
+        match __seq_res {
+            Matched(__pos, l) => {
+                let __seq_res = __parse_declaration_specifier_nonunique_type0(__input, __state, __pos, env);
+                match __seq_res {
+                    Matched(__pos, e) => {
+                        let __seq_res = Matched(__pos, __pos);
+                        match __seq_res {
+                            Matched(__pos, r) => Matched(__pos, { Node::new(e, Span::span(l, r)) }),
+                            Failed => Failed,
+                        }
+                    }
+                    Failed => Failed,
+                }
+            }
+            Failed => Failed,
+        }
+    }
+}
+
+fn __parse_declaration_specifiers<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize, env: &mut Env) -> RuleResult<Vec<Node<DeclarationSpecifier>>> {
     #![allow(non_snake_case, unused)]
     {
         let __choice_res = {
-            let __seq_res = __parse_declaration_typedef(__input, __state, __pos, env);
+            let __seq_res = {
+                let __seq_res = {
+                    let mut __repeat_pos = __pos;
+                    let mut __repeat_value = vec![];
+                    loop {
+                        let __pos = __repeat_pos;
+                        let __pos = if __repeat_value.len() > 0 {
+                            let __sep_res = __parse__(__input, __state, __pos, env);
+                            match __sep_res {
+                                Matched(__newpos, _) => __newpos,
+                                Failed => break,
+                            }
+                        } else {
+                            __pos
+                        };
+                        let __step_res = __parse_declaration_specifier_nontype(__input, __state, __pos, env);
+                        match __step_res {
+                            Matched(__newpos, __value) => {
+                                __repeat_pos = __newpos;
+                                __repeat_value.push(__value);
+                            }
+                            Failed => {
+                                break;
+                            }
+                        }
+                    }
+                    Matched(__repeat_pos, __repeat_value)
+                };
+                match __seq_res {
+                    Matched(__pos, e) => Matched(__pos, { e }),
+                    Failed => Failed,
+                }
+            };
             match __seq_res {
-                Matched(__pos, h) => {
+                Matched(__pos, before) => {
                     let __seq_res = __parse__(__input, __state, __pos, env);
                     match __seq_res {
                         Matched(__pos, _) => {
-                            let __seq_res = __parse_declaration_typedef_tail(__input, __state, __pos, env);
+                            let __seq_res = __parse_declaration_unique_type(__input, __state, __pos, env);
                             match __seq_res {
-                                Matched(__pos, t) => Matched(__pos, { (concat(h, t.0), t.1) }),
+                                Matched(__pos, single) => {
+                                    let __seq_res = __parse__(__input, __state, __pos, env);
+                                    match __seq_res {
+                                        Matched(__pos, _) => {
+                                            let __seq_res = {
+                                                let __seq_res = {
+                                                    let mut __repeat_pos = __pos;
+                                                    let mut __repeat_value = vec![];
+                                                    loop {
+                                                        let __pos = __repeat_pos;
+                                                        let __pos = if __repeat_value.len() > 0 {
+                                                            let __sep_res = __parse__(__input, __state, __pos, env);
+                                                            match __sep_res {
+                                                                Matched(__newpos, _) => __newpos,
+                                                                Failed => break,
+                                                            }
+                                                        } else {
+                                                            __pos
+                                                        };
+                                                        let __step_res = __parse_declaration_specifier_nontype(__input, __state, __pos, env);
+                                                        match __step_res {
+                                                            Matched(__newpos, __value) => {
+                                                                __repeat_pos = __newpos;
+                                                                __repeat_value.push(__value);
+                                                            }
+                                                            Failed => {
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                    Matched(__repeat_pos, __repeat_value)
+                                                };
+                                                match __seq_res {
+                                                    Matched(__pos, e) => Matched(__pos, { e }),
+                                                    Failed => Failed,
+                                                }
+                                            };
+                                            match __seq_res {
+                                                Matched(__pos, after) => Matched(__pos, { (before, single, after).concat() }),
+                                                Failed => Failed,
+                                            }
+                                        }
+                                        Failed => Failed,
+                                    }
+                                }
                                 Failed => Failed,
                             }
                         }
@@ -5075,169 +5221,94 @@ fn __parse_declaration2<'input>(__input: &'input str, __state: &mut ParseState<'
         match __choice_res {
             Matched(__pos, __value) => Matched(__pos, __value),
             Failed => {
-                let __choice_res = {
-                    let __seq_res = __parse_declaration_unique_type(__input, __state, __pos, env);
-                    match __seq_res {
-                        Matched(__pos, h) => {
-                            let __seq_res = __parse__(__input, __state, __pos, env);
-                            match __seq_res {
-                                Matched(__pos, _) => {
-                                    let __seq_res = {
-                                        let __seq_res = __parse_declaration_specifiers_unique(__input, __state, __pos, env);
-                                        match __seq_res {
-                                            Matched(__pos, h) => {
-                                                let __seq_res = __parse__(__input, __state, __pos, env);
-                                                match __seq_res {
-                                                    Matched(__pos, _) => {
-                                                        let __seq_res = {
-                                                            let __choice_res = {
-                                                                let __seq_res = __parse_declaration_typedef(__input, __state, __pos, env);
-                                                                match __seq_res {
-                                                                    Matched(__pos, h) => {
-                                                                        let __seq_res = __parse__(__input, __state, __pos, env);
-                                                                        match __seq_res {
-                                                                            Matched(__pos, _) => {
-                                                                                let __seq_res = {
-                                                                                    let __seq_res = __parse_declaration_specifiers_unique(__input, __state, __pos, env);
-                                                                                    match __seq_res {
-                                                                                        Matched(__pos, s) => {
-                                                                                            let __seq_res = __parse__(__input, __state, __pos, env);
-                                                                                            match __seq_res {
-                                                                                                Matched(__pos, _) => {
-                                                                                                    let __seq_res = __parse_declaration_type_declarators(__input, __state, __pos, env);
-                                                                                                    match __seq_res {
-                                                                                                        Matched(__pos, d) => Matched(__pos, { (s, d) }),
-                                                                                                        Failed => Failed,
-                                                                                                    }
-                                                                                                }
-                                                                                                Failed => Failed,
-                                                                                            }
-                                                                                        }
-                                                                                        Failed => Failed,
-                                                                                    }
-                                                                                };
-                                                                                match __seq_res {
-                                                                                    Matched(__pos, t) => Matched(__pos, { (concat(h, t.0), t.1) }),
-                                                                                    Failed => Failed,
-                                                                                }
-                                                                            }
-                                                                            Failed => Failed,
-                                                                        }
-                                                                    }
-                                                                    Failed => Failed,
-                                                                }
-                                                            };
-                                                            match __choice_res {
-                                                                Matched(__pos, __value) => Matched(__pos, __value),
-                                                                Failed => {
-                                                                    let __seq_res = __parse_declaration_init_declarators(__input, __state, __pos, env);
-                                                                    match __seq_res {
-                                                                        Matched(__pos, d) => Matched(__pos, { (Vec::new(), d) }),
-                                                                        Failed => Failed,
-                                                                    }
-                                                                }
-                                                            }
-                                                        };
-                                                        match __seq_res {
-                                                            Matched(__pos, t) => Matched(__pos, { (concat(h, t.0), t.1) }),
-                                                            Failed => Failed,
-                                                        }
-                                                    }
-                                                    Failed => Failed,
-                                                }
-                                            }
-                                            Failed => Failed,
-                                        }
-                                    };
-                                    match __seq_res {
-                                        Matched(__pos, t) => Matched(__pos, { (concat(h, t.0), t.1) }),
-                                        Failed => Failed,
-                                    }
+                let __seq_res = {
+                    let __seq_res = {
+                        let mut __repeat_pos = __pos;
+                        let mut __repeat_value = vec![];
+                        loop {
+                            let __pos = __repeat_pos;
+                            let __pos = if __repeat_value.len() > 0 {
+                                let __sep_res = __parse__(__input, __state, __pos, env);
+                                match __sep_res {
+                                    Matched(__newpos, _) => __newpos,
+                                    Failed => break,
                                 }
-                                Failed => Failed,
+                            } else {
+                                __pos
+                            };
+                            let __step_res = __parse_declaration_specifier_nontype(__input, __state, __pos, env);
+                            match __step_res {
+                                Matched(__newpos, __value) => {
+                                    __repeat_pos = __newpos;
+                                    __repeat_value.push(__value);
+                                }
+                                Failed => {
+                                    break;
+                                }
                             }
                         }
+                        Matched(__repeat_pos, __repeat_value)
+                    };
+                    match __seq_res {
+                        Matched(__pos, e) => Matched(__pos, { e }),
                         Failed => Failed,
                     }
                 };
-                match __choice_res {
-                    Matched(__pos, __value) => Matched(__pos, __value),
-                    Failed => {
-                        let __seq_res = __parse_declaration_nonunique_type(__input, __state, __pos, env);
+                match __seq_res {
+                    Matched(__pos, before) => {
+                        let __seq_res = __parse__(__input, __state, __pos, env);
                         match __seq_res {
-                            Matched(__pos, h) => {
-                                let __seq_res = __parse__(__input, __state, __pos, env);
+                            Matched(__pos, _) => {
+                                let __seq_res = __parse_declaration_nonunique_type(__input, __state, __pos, env);
                                 match __seq_res {
-                                    Matched(__pos, _) => {
-                                        let __seq_res = {
-                                            let __seq_res = __parse_declaration_specifiers_nonunique(__input, __state, __pos, env);
-                                            match __seq_res {
-                                                Matched(__pos, h) => {
-                                                    let __seq_res = __parse__(__input, __state, __pos, env);
-                                                    match __seq_res {
-                                                        Matched(__pos, _) => {
-                                                            let __seq_res = {
-                                                                let __choice_res = {
-                                                                    let __seq_res = __parse_declaration_typedef(__input, __state, __pos, env);
-                                                                    match __seq_res {
-                                                                        Matched(__pos, h) => {
-                                                                            let __seq_res = __parse__(__input, __state, __pos, env);
-                                                                            match __seq_res {
-                                                                                Matched(__pos, _) => {
-                                                                                    let __seq_res = {
-                                                                                        let __seq_res = __parse_declaration_specifiers_nonunique(__input, __state, __pos, env);
-                                                                                        match __seq_res {
-                                                                                            Matched(__pos, s) => {
-                                                                                                let __seq_res = __parse__(__input, __state, __pos, env);
-                                                                                                match __seq_res {
-                                                                                                    Matched(__pos, _) => {
-                                                                                                        let __seq_res = __parse_declaration_type_declarators(__input, __state, __pos, env);
-                                                                                                        match __seq_res {
-                                                                                                            Matched(__pos, d) => Matched(__pos, { (s, d) }),
-                                                                                                            Failed => Failed,
-                                                                                                        }
-                                                                                                    }
-                                                                                                    Failed => Failed,
-                                                                                                }
-                                                                                            }
-                                                                                            Failed => Failed,
-                                                                                        }
-                                                                                    };
-                                                                                    match __seq_res {
-                                                                                        Matched(__pos, t) => Matched(__pos, { (concat(h, t.0), t.1) }),
-                                                                                        Failed => Failed,
-                                                                                    }
-                                                                                }
-                                                                                Failed => Failed,
-                                                                            }
-                                                                        }
-                                                                        Failed => Failed,
-                                                                    }
-                                                                };
+                                    Matched(__pos, single) => {
+                                        let __seq_res = __parse__(__input, __state, __pos, env);
+                                        match __seq_res {
+                                            Matched(__pos, _) => {
+                                                let __seq_res = {
+                                                    let __seq_res = {
+                                                        let mut __repeat_pos = __pos;
+                                                        let mut __repeat_value = vec![];
+                                                        loop {
+                                                            let __pos = __repeat_pos;
+                                                            let __pos = if __repeat_value.len() > 0 {
+                                                                let __sep_res = __parse__(__input, __state, __pos, env);
+                                                                match __sep_res {
+                                                                    Matched(__newpos, _) => __newpos,
+                                                                    Failed => break,
+                                                                }
+                                                            } else {
+                                                                __pos
+                                                            };
+                                                            let __step_res = {
+                                                                let __choice_res = __parse_declaration_nonunique_type(__input, __state, __pos, env);
                                                                 match __choice_res {
                                                                     Matched(__pos, __value) => Matched(__pos, __value),
-                                                                    Failed => {
-                                                                        let __seq_res = __parse_declaration_init_declarators(__input, __state, __pos, env);
-                                                                        match __seq_res {
-                                                                            Matched(__pos, d) => Matched(__pos, { (Vec::new(), d) }),
-                                                                            Failed => Failed,
-                                                                        }
-                                                                    }
+                                                                    Failed => __parse_declaration_specifier_nontype(__input, __state, __pos, env),
                                                                 }
                                                             };
-                                                            match __seq_res {
-                                                                Matched(__pos, t) => Matched(__pos, { (concat(h, t.0), t.1) }),
-                                                                Failed => Failed,
+                                                            match __step_res {
+                                                                Matched(__newpos, __value) => {
+                                                                    __repeat_pos = __newpos;
+                                                                    __repeat_value.push(__value);
+                                                                }
+                                                                Failed => {
+                                                                    break;
+                                                                }
                                                             }
                                                         }
+                                                        Matched(__repeat_pos, __repeat_value)
+                                                    };
+                                                    match __seq_res {
+                                                        Matched(__pos, e) => Matched(__pos, { e }),
                                                         Failed => Failed,
                                                     }
+                                                };
+                                                match __seq_res {
+                                                    Matched(__pos, after) => Matched(__pos, { (before, single, after).concat() }),
+                                                    Failed => Failed,
                                                 }
-                                                Failed => Failed,
                                             }
-                                        };
-                                        match __seq_res {
-                                            Matched(__pos, t) => Matched(__pos, { (concat(h, t.0), t.1) }),
                                             Failed => Failed,
                                         }
                                     }
@@ -5247,71 +5318,110 @@ fn __parse_declaration2<'input>(__input: &'input str, __state: &mut ParseState<'
                             Failed => Failed,
                         }
                     }
+                    Failed => Failed,
                 }
             }
         }
     }
 }
 
-fn __parse_declaration_typedef_tail<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize, env: &mut Env) -> RuleResult<(Vec<Node<DeclarationSpecifier>>, Vec<Node<InitDeclarator>>)> {
+fn __parse_declaration_specifiers_typedef<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize, env: &mut Env) -> RuleResult<Vec<Node<DeclarationSpecifier>>> {
     #![allow(non_snake_case, unused)]
     {
         let __choice_res = {
-            let __seq_res = __parse_declaration_unique_type(__input, __state, __pos, env);
+            let __seq_res = {
+                let __seq_res = {
+                    let mut __repeat_pos = __pos;
+                    let mut __repeat_value = vec![];
+                    loop {
+                        let __pos = __repeat_pos;
+                        let __pos = if __repeat_value.len() > 0 {
+                            let __sep_res = __parse__(__input, __state, __pos, env);
+                            match __sep_res {
+                                Matched(__newpos, _) => __newpos,
+                                Failed => break,
+                            }
+                        } else {
+                            __pos
+                        };
+                        let __step_res = __parse_declaration_specifier_nontype(__input, __state, __pos, env);
+                        match __step_res {
+                            Matched(__newpos, __value) => {
+                                __repeat_pos = __newpos;
+                                __repeat_value.push(__value);
+                            }
+                            Failed => {
+                                break;
+                            }
+                        }
+                    }
+                    Matched(__repeat_pos, __repeat_value)
+                };
+                match __seq_res {
+                    Matched(__pos, e) => Matched(__pos, { e }),
+                    Failed => Failed,
+                }
+            };
             match __seq_res {
-                Matched(__pos, h) => {
+                Matched(__pos, before) => {
                     let __seq_res = __parse__(__input, __state, __pos, env);
                     match __seq_res {
                         Matched(__pos, _) => {
                             let __seq_res = {
-                                let __seq_res = __parse_declaration_specifiers_unique(__input, __state, __pos, env);
-                                match __seq_res {
-                                    Matched(__pos, s) => {
-                                        let __seq_res = __parse__(__input, __state, __pos, env);
-                                        match __seq_res {
-                                            Matched(__pos, _) => {
-                                                let __seq_res = __parse_declaration_type_declarators(__input, __state, __pos, env);
-                                                match __seq_res {
-                                                    Matched(__pos, d) => Matched(__pos, { (s, d) }),
-                                                    Failed => Failed,
-                                                }
-                                            }
-                                            Failed => Failed,
-                                        }
-                                    }
-                                    Failed => Failed,
-                                }
-                            };
-                            match __seq_res {
-                                Matched(__pos, t) => Matched(__pos, { (concat(h, t.0), t.1) }),
-                                Failed => Failed,
-                            }
-                        }
-                        Failed => Failed,
-                    }
-                }
-                Failed => Failed,
-            }
-        };
-        match __choice_res {
-            Matched(__pos, __value) => Matched(__pos, __value),
-            Failed => {
-                let __seq_res = __parse_declaration_nonunique_type(__input, __state, __pos, env);
-                match __seq_res {
-                    Matched(__pos, h) => {
-                        let __seq_res = __parse__(__input, __state, __pos, env);
-                        match __seq_res {
-                            Matched(__pos, _) => {
-                                let __seq_res = {
-                                    let __seq_res = __parse_declaration_specifiers_nonunique(__input, __state, __pos, env);
+                                let __choice_res = {
+                                    let __seq_res = __parse_declaration_typedef(__input, __state, __pos, env);
                                     match __seq_res {
-                                        Matched(__pos, s) => {
+                                        Matched(__pos, a) => {
                                             let __seq_res = __parse__(__input, __state, __pos, env);
                                             match __seq_res {
                                                 Matched(__pos, _) => {
-                                                    let __seq_res = __parse_declaration_type_declarators(__input, __state, __pos, env);
+                                                    let __seq_res = {
+                                                        let __seq_res = {
+                                                            let mut __repeat_pos = __pos;
+                                                            let mut __repeat_value = vec![];
+                                                            loop {
+                                                                let __pos = __repeat_pos;
+                                                                let __pos = if __repeat_value.len() > 0 {
+                                                                    let __sep_res = __parse__(__input, __state, __pos, env);
+                                                                    match __sep_res {
+                                                                        Matched(__newpos, _) => __newpos,
+                                                                        Failed => break,
+                                                                    }
+                                                                } else {
+                                                                    __pos
+                                                                };
+                                                                let __step_res = __parse_declaration_specifier_nontype(__input, __state, __pos, env);
+                                                                match __step_res {
+                                                                    Matched(__newpos, __value) => {
+                                                                        __repeat_pos = __newpos;
+                                                                        __repeat_value.push(__value);
+                                                                    }
+                                                                    Failed => {
+                                                                        break;
+                                                                    }
+                                                                }
+                                                            }
+                                                            Matched(__repeat_pos, __repeat_value)
+                                                        };
+                                                        match __seq_res {
+                                                            Matched(__pos, e) => Matched(__pos, { e }),
+                                                            Failed => Failed,
+                                                        }
+                                                    };
                                                     match __seq_res {
-                                                        Matched(__pos, d) => Matched(__pos, { (s, d) }),
+                                                        Matched(__pos, c) => {
+                                                            let __seq_res = __parse__(__input, __state, __pos, env);
+                                                            match __seq_res {
+                                                                Matched(__pos, _) => {
+                                                                    let __seq_res = __parse_declaration_unique_type(__input, __state, __pos, env);
+                                                                    match __seq_res {
+                                                                        Matched(__pos, b) => Matched(__pos, { (a, c, b).concat() }),
+                                                                        Failed => Failed,
+                                                                    }
+                                                                }
+                                                                Failed => Failed,
+                                                            }
+                                                        }
                                                         Failed => Failed,
                                                     }
                                                 }
@@ -5321,115 +5431,119 @@ fn __parse_declaration_typedef_tail<'input>(__input: &'input str, __state: &mut 
                                         Failed => Failed,
                                     }
                                 };
-                                match __seq_res {
-                                    Matched(__pos, t) => Matched(__pos, { (concat(h, t.0), t.1) }),
-                                    Failed => Failed,
+                                match __choice_res {
+                                    Matched(__pos, __value) => Matched(__pos, __value),
+                                    Failed => {
+                                        let __seq_res = __parse_declaration_unique_type(__input, __state, __pos, env);
+                                        match __seq_res {
+                                            Matched(__pos, b) => {
+                                                let __seq_res = __parse__(__input, __state, __pos, env);
+                                                match __seq_res {
+                                                    Matched(__pos, _) => {
+                                                        let __seq_res = {
+                                                            let __seq_res = {
+                                                                let mut __repeat_pos = __pos;
+                                                                let mut __repeat_value = vec![];
+                                                                loop {
+                                                                    let __pos = __repeat_pos;
+                                                                    let __pos = if __repeat_value.len() > 0 {
+                                                                        let __sep_res = __parse__(__input, __state, __pos, env);
+                                                                        match __sep_res {
+                                                                            Matched(__newpos, _) => __newpos,
+                                                                            Failed => break,
+                                                                        }
+                                                                    } else {
+                                                                        __pos
+                                                                    };
+                                                                    let __step_res = __parse_declaration_specifier_nontype(__input, __state, __pos, env);
+                                                                    match __step_res {
+                                                                        Matched(__newpos, __value) => {
+                                                                            __repeat_pos = __newpos;
+                                                                            __repeat_value.push(__value);
+                                                                        }
+                                                                        Failed => {
+                                                                            break;
+                                                                        }
+                                                                    }
+                                                                }
+                                                                Matched(__repeat_pos, __repeat_value)
+                                                            };
+                                                            match __seq_res {
+                                                                Matched(__pos, e) => Matched(__pos, { e }),
+                                                                Failed => Failed,
+                                                            }
+                                                        };
+                                                        match __seq_res {
+                                                            Matched(__pos, c) => {
+                                                                let __seq_res = __parse__(__input, __state, __pos, env);
+                                                                match __seq_res {
+                                                                    Matched(__pos, _) => {
+                                                                        let __seq_res = __parse_declaration_typedef(__input, __state, __pos, env);
+                                                                        match __seq_res {
+                                                                            Matched(__pos, a) => Matched(__pos, { (b, c, a).concat() }),
+                                                                            Failed => Failed,
+                                                                        }
+                                                                    }
+                                                                    Failed => Failed,
+                                                                }
+                                                            }
+                                                            Failed => Failed,
+                                                        }
+                                                    }
+                                                    Failed => Failed,
+                                                }
+                                            }
+                                            Failed => Failed,
+                                        }
+                                    }
                                 }
-                            }
-                            Failed => Failed,
-                        }
-                    }
-                    Failed => Failed,
-                }
-            }
-        }
-    }
-}
-
-fn __parse_declaration_unique_type<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize, env: &mut Env) -> RuleResult<Vec<Node<DeclarationSpecifier>>> {
-    #![allow(non_snake_case, unused)]
-    {
-        let __seq_res = {
-            let __seq_res = Matched(__pos, __pos);
-            match __seq_res {
-                Matched(__pos, l) => {
-                    let __seq_res = __parse_declaration_specifier_unique_type0(__input, __state, __pos, env);
-                    match __seq_res {
-                        Matched(__pos, e) => {
-                            let __seq_res = Matched(__pos, __pos);
+                            };
                             match __seq_res {
-                                Matched(__pos, r) => Matched(__pos, { Node::new(e, Span::span(l, r)) }),
-                                Failed => Failed,
-                            }
-                        }
-                        Failed => Failed,
-                    }
-                }
-                Failed => Failed,
-            }
-        };
-        match __seq_res {
-            Matched(__pos, n) => Matched(__pos, { vec![n] }),
-            Failed => Failed,
-        }
-    }
-}
-
-fn __parse_declaration_nonunique_type<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize, env: &mut Env) -> RuleResult<Vec<Node<DeclarationSpecifier>>> {
-    #![allow(non_snake_case, unused)]
-    {
-        let __seq_res = {
-            let __seq_res = Matched(__pos, __pos);
-            match __seq_res {
-                Matched(__pos, l) => {
-                    let __seq_res = __parse_declaration_specifier_nonunique_type0(__input, __state, __pos, env);
-                    match __seq_res {
-                        Matched(__pos, e) => {
-                            let __seq_res = Matched(__pos, __pos);
-                            match __seq_res {
-                                Matched(__pos, r) => Matched(__pos, { Node::new(e, Span::span(l, r)) }),
-                                Failed => Failed,
-                            }
-                        }
-                        Failed => Failed,
-                    }
-                }
-                Failed => Failed,
-            }
-        };
-        match __seq_res {
-            Matched(__pos, n) => Matched(__pos, { vec![n] }),
-            Failed => Failed,
-        }
-    }
-}
-
-fn __parse_declaration_specifiers<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize, env: &mut Env) -> RuleResult<Vec<Node<DeclarationSpecifier>>> {
-    #![allow(non_snake_case, unused)]
-    {
-        let __seq_res = __parse_declaration_specifiers_unique(__input, __state, __pos, env);
-        match __seq_res {
-            Matched(__pos, s) => {
-                let __seq_res = __parse__(__input, __state, __pos, env);
-                match __seq_res {
-                    Matched(__pos, _) => {
-                        let __seq_res = __parse_declaration_specifiers_tail(__input, __state, __pos, env);
-                        match __seq_res {
-                            Matched(__pos, t) => Matched(__pos, { concat(s, t) }),
-                            Failed => Failed,
-                        }
-                    }
-                    Failed => Failed,
-                }
-            }
-            Failed => Failed,
-        }
-    }
-}
-
-fn __parse_declaration_specifiers_tail<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize, env: &mut Env) -> RuleResult<Vec<Node<DeclarationSpecifier>>> {
-    #![allow(non_snake_case, unused)]
-    {
-        let __choice_res = {
-            let __seq_res = __parse_declaration_unique_type(__input, __state, __pos, env);
-            match __seq_res {
-                Matched(__pos, t) => {
-                    let __seq_res = __parse__(__input, __state, __pos, env);
-                    match __seq_res {
-                        Matched(__pos, _) => {
-                            let __seq_res = __parse_declaration_specifiers_unique(__input, __state, __pos, env);
-                            match __seq_res {
-                                Matched(__pos, s) => Matched(__pos, { concat(t, s) }),
+                                Matched(__pos, single) => {
+                                    let __seq_res = __parse__(__input, __state, __pos, env);
+                                    match __seq_res {
+                                        Matched(__pos, _) => {
+                                            let __seq_res = {
+                                                let __seq_res = {
+                                                    let mut __repeat_pos = __pos;
+                                                    let mut __repeat_value = vec![];
+                                                    loop {
+                                                        let __pos = __repeat_pos;
+                                                        let __pos = if __repeat_value.len() > 0 {
+                                                            let __sep_res = __parse__(__input, __state, __pos, env);
+                                                            match __sep_res {
+                                                                Matched(__newpos, _) => __newpos,
+                                                                Failed => break,
+                                                            }
+                                                        } else {
+                                                            __pos
+                                                        };
+                                                        let __step_res = __parse_declaration_specifier_nontype(__input, __state, __pos, env);
+                                                        match __step_res {
+                                                            Matched(__newpos, __value) => {
+                                                                __repeat_pos = __newpos;
+                                                                __repeat_value.push(__value);
+                                                            }
+                                                            Failed => {
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                    Matched(__repeat_pos, __repeat_value)
+                                                };
+                                                match __seq_res {
+                                                    Matched(__pos, e) => Matched(__pos, { e }),
+                                                    Failed => Failed,
+                                                }
+                                            };
+                                            match __seq_res {
+                                                Matched(__pos, after) => Matched(__pos, { (before, single, after).concat() }),
+                                                Failed => Failed,
+                                            }
+                                        }
+                                        Failed => Failed,
+                                    }
+                                }
                                 Failed => Failed,
                             }
                         }
@@ -5442,15 +5556,299 @@ fn __parse_declaration_specifiers_tail<'input>(__input: &'input str, __state: &m
         match __choice_res {
             Matched(__pos, __value) => Matched(__pos, __value),
             Failed => {
-                let __seq_res = __parse_declaration_nonunique_type(__input, __state, __pos, env);
+                let __seq_res = {
+                    let __seq_res = {
+                        let mut __repeat_pos = __pos;
+                        let mut __repeat_value = vec![];
+                        loop {
+                            let __pos = __repeat_pos;
+                            let __pos = if __repeat_value.len() > 0 {
+                                let __sep_res = __parse__(__input, __state, __pos, env);
+                                match __sep_res {
+                                    Matched(__newpos, _) => __newpos,
+                                    Failed => break,
+                                }
+                            } else {
+                                __pos
+                            };
+                            let __step_res = __parse_declaration_specifier_nontype(__input, __state, __pos, env);
+                            match __step_res {
+                                Matched(__newpos, __value) => {
+                                    __repeat_pos = __newpos;
+                                    __repeat_value.push(__value);
+                                }
+                                Failed => {
+                                    break;
+                                }
+                            }
+                        }
+                        Matched(__repeat_pos, __repeat_value)
+                    };
+                    match __seq_res {
+                        Matched(__pos, e) => Matched(__pos, { e }),
+                        Failed => Failed,
+                    }
+                };
                 match __seq_res {
-                    Matched(__pos, t) => {
+                    Matched(__pos, before) => {
                         let __seq_res = __parse__(__input, __state, __pos, env);
                         match __seq_res {
                             Matched(__pos, _) => {
-                                let __seq_res = __parse_declaration_specifiers_nonunique(__input, __state, __pos, env);
+                                let __seq_res = {
+                                    let __choice_res = {
+                                        let __seq_res = __parse_declaration_typedef(__input, __state, __pos, env);
+                                        match __seq_res {
+                                            Matched(__pos, a) => {
+                                                let __seq_res = __parse__(__input, __state, __pos, env);
+                                                match __seq_res {
+                                                    Matched(__pos, _) => {
+                                                        let __seq_res = {
+                                                            let __seq_res = {
+                                                                let mut __repeat_pos = __pos;
+                                                                let mut __repeat_value = vec![];
+                                                                loop {
+                                                                    let __pos = __repeat_pos;
+                                                                    let __pos = if __repeat_value.len() > 0 {
+                                                                        let __sep_res = __parse__(__input, __state, __pos, env);
+                                                                        match __sep_res {
+                                                                            Matched(__newpos, _) => __newpos,
+                                                                            Failed => break,
+                                                                        }
+                                                                    } else {
+                                                                        __pos
+                                                                    };
+                                                                    let __step_res = __parse_declaration_specifier_nontype(__input, __state, __pos, env);
+                                                                    match __step_res {
+                                                                        Matched(__newpos, __value) => {
+                                                                            __repeat_pos = __newpos;
+                                                                            __repeat_value.push(__value);
+                                                                        }
+                                                                        Failed => {
+                                                                            break;
+                                                                        }
+                                                                    }
+                                                                }
+                                                                Matched(__repeat_pos, __repeat_value)
+                                                            };
+                                                            match __seq_res {
+                                                                Matched(__pos, e) => Matched(__pos, { e }),
+                                                                Failed => Failed,
+                                                            }
+                                                        };
+                                                        match __seq_res {
+                                                            Matched(__pos, c) => {
+                                                                let __seq_res = __parse__(__input, __state, __pos, env);
+                                                                match __seq_res {
+                                                                    Matched(__pos, _) => {
+                                                                        let __seq_res = {
+                                                                            let __seq_res = {
+                                                                                let mut __repeat_pos = __pos;
+                                                                                let mut __repeat_value = vec![];
+                                                                                loop {
+                                                                                    let __pos = __repeat_pos;
+                                                                                    let __pos = if __repeat_value.len() > 0 {
+                                                                                        let __sep_res = __parse__(__input, __state, __pos, env);
+                                                                                        match __sep_res {
+                                                                                            Matched(__newpos, _) => __newpos,
+                                                                                            Failed => break,
+                                                                                        }
+                                                                                    } else {
+                                                                                        __pos
+                                                                                    };
+                                                                                    let __step_res = __parse_declaration_nonunique_type(__input, __state, __pos, env);
+                                                                                    match __step_res {
+                                                                                        Matched(__newpos, __value) => {
+                                                                                            __repeat_pos = __newpos;
+                                                                                            __repeat_value.push(__value);
+                                                                                        }
+                                                                                        Failed => {
+                                                                                            break;
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                                if __repeat_value.len() >= 1 {
+                                                                                    Matched(__repeat_pos, __repeat_value)
+                                                                                } else {
+                                                                                    Failed
+                                                                                }
+                                                                            };
+                                                                            match __seq_res {
+                                                                                Matched(__pos, e) => Matched(__pos, { e }),
+                                                                                Failed => Failed,
+                                                                            }
+                                                                        };
+                                                                        match __seq_res {
+                                                                            Matched(__pos, b) => Matched(__pos, { (a, c, b).concat() }),
+                                                                            Failed => Failed,
+                                                                        }
+                                                                    }
+                                                                    Failed => Failed,
+                                                                }
+                                                            }
+                                                            Failed => Failed,
+                                                        }
+                                                    }
+                                                    Failed => Failed,
+                                                }
+                                            }
+                                            Failed => Failed,
+                                        }
+                                    };
+                                    match __choice_res {
+                                        Matched(__pos, __value) => Matched(__pos, __value),
+                                        Failed => {
+                                            let __seq_res = {
+                                                let __seq_res = {
+                                                    let mut __repeat_pos = __pos;
+                                                    let mut __repeat_value = vec![];
+                                                    loop {
+                                                        let __pos = __repeat_pos;
+                                                        let __pos = if __repeat_value.len() > 0 {
+                                                            let __sep_res = __parse__(__input, __state, __pos, env);
+                                                            match __sep_res {
+                                                                Matched(__newpos, _) => __newpos,
+                                                                Failed => break,
+                                                            }
+                                                        } else {
+                                                            __pos
+                                                        };
+                                                        let __step_res = __parse_declaration_nonunique_type(__input, __state, __pos, env);
+                                                        match __step_res {
+                                                            Matched(__newpos, __value) => {
+                                                                __repeat_pos = __newpos;
+                                                                __repeat_value.push(__value);
+                                                            }
+                                                            Failed => {
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                    if __repeat_value.len() >= 1 {
+                                                        Matched(__repeat_pos, __repeat_value)
+                                                    } else {
+                                                        Failed
+                                                    }
+                                                };
+                                                match __seq_res {
+                                                    Matched(__pos, e) => Matched(__pos, { e }),
+                                                    Failed => Failed,
+                                                }
+                                            };
+                                            match __seq_res {
+                                                Matched(__pos, b) => {
+                                                    let __seq_res = __parse__(__input, __state, __pos, env);
+                                                    match __seq_res {
+                                                        Matched(__pos, _) => {
+                                                            let __seq_res = {
+                                                                let __seq_res = {
+                                                                    let mut __repeat_pos = __pos;
+                                                                    let mut __repeat_value = vec![];
+                                                                    loop {
+                                                                        let __pos = __repeat_pos;
+                                                                        let __pos = if __repeat_value.len() > 0 {
+                                                                            let __sep_res = __parse__(__input, __state, __pos, env);
+                                                                            match __sep_res {
+                                                                                Matched(__newpos, _) => __newpos,
+                                                                                Failed => break,
+                                                                            }
+                                                                        } else {
+                                                                            __pos
+                                                                        };
+                                                                        let __step_res = __parse_declaration_specifier_nontype(__input, __state, __pos, env);
+                                                                        match __step_res {
+                                                                            Matched(__newpos, __value) => {
+                                                                                __repeat_pos = __newpos;
+                                                                                __repeat_value.push(__value);
+                                                                            }
+                                                                            Failed => {
+                                                                                break;
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                    Matched(__repeat_pos, __repeat_value)
+                                                                };
+                                                                match __seq_res {
+                                                                    Matched(__pos, e) => Matched(__pos, { e }),
+                                                                    Failed => Failed,
+                                                                }
+                                                            };
+                                                            match __seq_res {
+                                                                Matched(__pos, c) => {
+                                                                    let __seq_res = __parse__(__input, __state, __pos, env);
+                                                                    match __seq_res {
+                                                                        Matched(__pos, _) => {
+                                                                            let __seq_res = __parse_declaration_typedef(__input, __state, __pos, env);
+                                                                            match __seq_res {
+                                                                                Matched(__pos, a) => Matched(__pos, { (b, c, a).concat() }),
+                                                                                Failed => Failed,
+                                                                            }
+                                                                        }
+                                                                        Failed => Failed,
+                                                                    }
+                                                                }
+                                                                Failed => Failed,
+                                                            }
+                                                        }
+                                                        Failed => Failed,
+                                                    }
+                                                }
+                                                Failed => Failed,
+                                            }
+                                        }
+                                    }
+                                };
                                 match __seq_res {
-                                    Matched(__pos, s) => Matched(__pos, { concat(t, s) }),
+                                    Matched(__pos, single) => {
+                                        let __seq_res = __parse__(__input, __state, __pos, env);
+                                        match __seq_res {
+                                            Matched(__pos, _) => {
+                                                let __seq_res = {
+                                                    let __seq_res = {
+                                                        let mut __repeat_pos = __pos;
+                                                        let mut __repeat_value = vec![];
+                                                        loop {
+                                                            let __pos = __repeat_pos;
+                                                            let __pos = if __repeat_value.len() > 0 {
+                                                                let __sep_res = __parse__(__input, __state, __pos, env);
+                                                                match __sep_res {
+                                                                    Matched(__newpos, _) => __newpos,
+                                                                    Failed => break,
+                                                                }
+                                                            } else {
+                                                                __pos
+                                                            };
+                                                            let __step_res = {
+                                                                let __choice_res = __parse_declaration_specifier_nontype(__input, __state, __pos, env);
+                                                                match __choice_res {
+                                                                    Matched(__pos, __value) => Matched(__pos, __value),
+                                                                    Failed => __parse_declaration_nonunique_type(__input, __state, __pos, env),
+                                                                }
+                                                            };
+                                                            match __step_res {
+                                                                Matched(__newpos, __value) => {
+                                                                    __repeat_pos = __newpos;
+                                                                    __repeat_value.push(__value);
+                                                                }
+                                                                Failed => {
+                                                                    break;
+                                                                }
+                                                            }
+                                                        }
+                                                        Matched(__repeat_pos, __repeat_value)
+                                                    };
+                                                    match __seq_res {
+                                                        Matched(__pos, e) => Matched(__pos, { e }),
+                                                        Failed => Failed,
+                                                    }
+                                                };
+                                                match __seq_res {
+                                                    Matched(__pos, after) => Matched(__pos, { (before, single, after).concat() }),
+                                                    Failed => Failed,
+                                                }
+                                            }
+                                            Failed => Failed,
+                                        }
+                                    }
                                     Failed => Failed,
                                 }
                             }
@@ -5464,123 +5862,30 @@ fn __parse_declaration_specifiers_tail<'input>(__input: &'input str, __state: &m
     }
 }
 
-fn __parse_declaration_specifiers_unique<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize, env: &mut Env) -> RuleResult<Vec<Node<DeclarationSpecifier>>> {
+fn __parse_declaration_specifier_nontype<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize, env: &mut Env) -> RuleResult<Node<DeclarationSpecifier>> {
     #![allow(non_snake_case, unused)]
     {
-        let __seq_res = {
-            let mut __repeat_pos = __pos;
-            let mut __repeat_value = vec![];
-            loop {
-                let __pos = __repeat_pos;
-                let __pos = if __repeat_value.len() > 0 {
-                    let __sep_res = __parse__(__input, __state, __pos, env);
-                    match __sep_res {
-                        Matched(__newpos, _) => __newpos,
-                        Failed => break,
-                    }
-                } else {
-                    __pos
-                };
-                let __step_res = {
-                    let __seq_res = Matched(__pos, __pos);
-                    match __seq_res {
-                        Matched(__pos, l) => {
-                            let __seq_res = __parse_declaration_specifier_nontype(__input, __state, __pos, env);
-                            match __seq_res {
-                                Matched(__pos, e) => {
-                                    let __seq_res = Matched(__pos, __pos);
-                                    match __seq_res {
-                                        Matched(__pos, r) => Matched(__pos, { Node::new(e, Span::span(l, r)) }),
-                                        Failed => Failed,
-                                    }
-                                }
-                                Failed => Failed,
-                            }
+        let __seq_res = Matched(__pos, __pos);
+        match __seq_res {
+            Matched(__pos, l) => {
+                let __seq_res = __parse_declaration_specifier_nontype0(__input, __state, __pos, env);
+                match __seq_res {
+                    Matched(__pos, e) => {
+                        let __seq_res = Matched(__pos, __pos);
+                        match __seq_res {
+                            Matched(__pos, r) => Matched(__pos, { Node::new(e, Span::span(l, r)) }),
+                            Failed => Failed,
                         }
-                        Failed => Failed,
                     }
-                };
-                match __step_res {
-                    Matched(__newpos, __value) => {
-                        __repeat_pos = __newpos;
-                        __repeat_value.push(__value);
-                    }
-                    Failed => {
-                        break;
-                    }
+                    Failed => Failed,
                 }
             }
-            Matched(__repeat_pos, __repeat_value)
-        };
-        match __seq_res {
-            Matched(__pos, e) => Matched(__pos, { e }),
             Failed => Failed,
         }
     }
 }
 
-fn __parse_declaration_specifiers_nonunique<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize, env: &mut Env) -> RuleResult<Vec<Node<DeclarationSpecifier>>> {
-    #![allow(non_snake_case, unused)]
-    {
-        let __seq_res = {
-            let mut __repeat_pos = __pos;
-            let mut __repeat_value = vec![];
-            loop {
-                let __pos = __repeat_pos;
-                let __pos = if __repeat_value.len() > 0 {
-                    let __sep_res = __parse__(__input, __state, __pos, env);
-                    match __sep_res {
-                        Matched(__newpos, _) => __newpos,
-                        Failed => break,
-                    }
-                } else {
-                    __pos
-                };
-                let __step_res = {
-                    let __seq_res = Matched(__pos, __pos);
-                    match __seq_res {
-                        Matched(__pos, l) => {
-                            let __seq_res = {
-                                let __choice_res = __parse_declaration_specifier_nontype(__input, __state, __pos, env);
-                                match __choice_res {
-                                    Matched(__pos, __value) => Matched(__pos, __value),
-                                    Failed => __parse_declaration_specifier_nonunique_type0(__input, __state, __pos, env),
-                                }
-                            };
-                            match __seq_res {
-                                Matched(__pos, e) => {
-                                    let __seq_res = Matched(__pos, __pos);
-                                    match __seq_res {
-                                        Matched(__pos, r) => Matched(__pos, { Node::new(e, Span::span(l, r)) }),
-                                        Failed => Failed,
-                                    }
-                                }
-                                Failed => Failed,
-                            }
-                        }
-                        Failed => Failed,
-                    }
-                };
-                match __step_res {
-                    Matched(__newpos, __value) => {
-                        __repeat_pos = __newpos;
-                        __repeat_value.push(__value);
-                    }
-                    Failed => {
-                        break;
-                    }
-                }
-            }
-            Matched(__repeat_pos, __repeat_value)
-        };
-        match __seq_res {
-            Matched(__pos, e) => Matched(__pos, { e }),
-            Failed => Failed,
-        }
-    }
-}
-
-fn __parse_declaration_specifier_nontype<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize, env: &mut Env) -> RuleResult<DeclarationSpecifier> {
+fn __parse_declaration_specifier_nontype0<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize, env: &mut Env) -> RuleResult<DeclarationSpecifier> {
     #![allow(non_snake_case, unused)]
     {
         let __choice_res = {
@@ -5691,30 +5996,24 @@ fn __parse_declaration_specifier_nontype<'input>(__input: &'input str, __state: 
     }
 }
 
-fn __parse_declaration_typedef<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize, env: &mut Env) -> RuleResult<Vec<Node<DeclarationSpecifier>>> {
+fn __parse_declaration_typedef<'input>(__input: &'input str, __state: &mut ParseState<'input>, __pos: usize, env: &mut Env) -> RuleResult<Node<DeclarationSpecifier>> {
     #![allow(non_snake_case, unused)]
     {
-        let __seq_res = {
-            let __seq_res = Matched(__pos, __pos);
-            match __seq_res {
-                Matched(__pos, l) => {
-                    let __seq_res = __parse_declaration_typedef0(__input, __state, __pos, env);
-                    match __seq_res {
-                        Matched(__pos, e) => {
-                            let __seq_res = Matched(__pos, __pos);
-                            match __seq_res {
-                                Matched(__pos, r) => Matched(__pos, { Node::new(e, Span::span(l, r)) }),
-                                Failed => Failed,
-                            }
-                        }
-                        Failed => Failed,
-                    }
-                }
-                Failed => Failed,
-            }
-        };
+        let __seq_res = Matched(__pos, __pos);
         match __seq_res {
-            Matched(__pos, s) => Matched(__pos, { vec![s] }),
+            Matched(__pos, l) => {
+                let __seq_res = __parse_declaration_typedef0(__input, __state, __pos, env);
+                match __seq_res {
+                    Matched(__pos, e) => {
+                        let __seq_res = Matched(__pos, __pos);
+                        match __seq_res {
+                            Matched(__pos, r) => Matched(__pos, { Node::new(e, Span::span(l, r)) }),
+                            Failed => Failed,
+                        }
+                    }
+                    Failed => Failed,
+                }
+            }
             Failed => Failed,
         }
     }
@@ -7918,12 +8217,7 @@ fn __parse_specifier_qualifiers<'input>(__input: &'input str, __state: &mut Pars
                                                 }
                                             };
                                             match __seq_res {
-                                                Matched(__pos, after) => Matched(__pos, {
-                                                    let mut before = before;
-                                                    before.push(single);
-                                                    before.extend(after);
-                                                    before
-                                                }),
+                                                Matched(__pos, after) => Matched(__pos, { (before, single, after).concat() }),
                                                 Failed => Failed,
                                             }
                                         }
@@ -8098,12 +8392,7 @@ fn __parse_specifier_qualifiers<'input>(__input: &'input str, __state: &mut Pars
                                                     }
                                                 };
                                                 match __seq_res {
-                                                    Matched(__pos, after) => Matched(__pos, {
-                                                        let mut before = before;
-                                                        before.push(single);
-                                                        before.extend(after);
-                                                        before
-                                                    }),
+                                                    Matched(__pos, after) => Matched(__pos, { (before, single, after).concat() }),
                                                     Failed => Failed,
                                                 }
                                             }
