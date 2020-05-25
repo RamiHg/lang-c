@@ -1897,6 +1897,14 @@ fn test_ambiguous_declaration2() {
 }
 
 #[test]
+fn test_qualifier_in_typedef() {
+    use parser::translation_unit;
+    let env = &mut Env::new();
+    assert!(translation_unit("typedef int const long a;", env).is_ok());
+    assert!(translation_unit("typedef const int a;", env).is_ok());
+}
+
+#[test]
 fn test_ambiguous_parameter_field_declaration() {
     use parser::translation_unit;
     let env = &mut Env::new();

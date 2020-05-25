@@ -23,16 +23,22 @@ cs1<ex> = e:ex ++ (_ "," _) { e }
 
 // A list containing 0+ before's, 1 single, and 0+ after's.
 list_010<before, single, after> =
-    before:list0<before> _ single:single _ after:list0<after> {
-        let mut before = before;
-        before.push(single);
-        before.extend(after);
-        before
-    }
-// A list containing *exactly* one element of a, and any of b.
+    before:list0<before> _ single:single _ after:list0<after> { (before, single, after).concat() }
+
+// A list containing 1 of a, and 0+ of b.
 list_eq1_n<a, b> = list_010<b, a, b>
-// A list containing *at least* one element of a, and any of b.
+// A list containing 1+ of a, and 0+ of b.
 list_ge1_n<a, b> = list_010<b, a, a / b>
+
+// Either "a c* b" or "b c* a".
+list_acb_bca<a, b, c> =
+    a:a _ c:list0<c> _ b:b { (a, c, b).concat() } /
+    b:b _ c:list0<c> _ a:a { (b, c, a).concat() }
+
+// 1 of a, 1 of b, and 0+ of c (in any order).
+list_1a_1b_c<a, b, c> = list_010<c, list_acb_bca<a, b, c>, c>
+// 1 of a, 1+ of b, and 0+ of c.
+list_1a_manyb_c<a, b, c> = list_010<c, list_acb_bca<a, list1<b>, c>, c / b>
 
 ////
 // Whitespace
@@ -462,50 +468,26 @@ declaration0 -> Declaration =
         }
     }
 
-declaration_seq<h, t> = h:h _ t:t { (concat(h, t.0), t.1) }
-
 declaration1 -> (Vec<Node<DeclarationSpecifier>>, Vec<Node<InitDeclarator>>) =
-    declaration_seq<declaration_specifiers_unique, declaration2>
+    d:declaration_specifiers_typedef _ t:declaration_type_declarators { (d, t) } /
+    d:declaration_specifiers _ t:declaration_init_declarators { (d, t) }    
 
-declaration2 -> (Vec<Node<DeclarationSpecifier>>, Vec<Node<InitDeclarator>>) =
-    declaration_seq<declaration_typedef, declaration_typedef_tail> /
-    declaration_seq<declaration_unique_type, declaration_tail<declaration_specifiers_unique>> /
-    declaration_seq<declaration_nonunique_type, declaration_tail<declaration_specifiers_nonunique>>
+declaration_unique_type -> Node<DeclarationSpecifier> =
+    node<declaration_specifier_unique_type0>
 
-// What can follow a type specifier keyword or typename in a declaration
-declaration_tail<s> = declaration_seq<s, declaration_tail1<s>>
-declaration_tail1<s> =
-    declaration_seq<declaration_typedef, declaration_typedef_tail1<s>> /
-    d:declaration_init_declarators { (Vec::new(), d) }
-
-// What can follow a typedef keyword
-declaration_typedef_tail -> (Vec<Node<DeclarationSpecifier>>, Vec<Node<InitDeclarator>>) =
-    declaration_seq<declaration_unique_type, declaration_typedef_tail1<declaration_specifiers_unique>> /
-    declaration_seq<declaration_nonunique_type, declaration_typedef_tail1<declaration_specifiers_nonunique>>
-
-// What can follow after typedef + type name
-declaration_typedef_tail1<s> = s:s _ d:declaration_type_declarators { (s, d) }
-
-declaration_unique_type -> Vec<Node<DeclarationSpecifier>> =
-    n:node<declaration_specifier_unique_type0> { vec![ n ] }
-
-declaration_nonunique_type -> Vec<Node<DeclarationSpecifier>> =
-    n:node<declaration_specifier_nonunique_type0> { vec![ n ] }
+declaration_nonunique_type -> Node<DeclarationSpecifier> =
+    node<declaration_specifier_nonunique_type0>
 
 declaration_specifiers -> Vec<Node<DeclarationSpecifier>> =
-    s:declaration_specifiers_unique _ t:declaration_specifiers_tail { concat(s, t) }
+    list_eq1_n<declaration_unique_type, declaration_specifier_nontype> /
+    list_ge1_n<declaration_nonunique_type, declaration_specifier_nontype>
 
-declaration_specifiers_tail -> Vec<Node<DeclarationSpecifier>> =
-    t:declaration_unique_type _ s:declaration_specifiers_unique { concat(t, s) } /
-    t:declaration_nonunique_type _ s:declaration_specifiers_nonunique { concat(t, s) }
+declaration_specifiers_typedef -> Vec<Node<DeclarationSpecifier>> =
+    list_1a_1b_c<declaration_typedef, declaration_unique_type, declaration_specifier_nontype> /
+    list_1a_manyb_c<declaration_typedef, declaration_nonunique_type, declaration_specifier_nontype>
 
-declaration_specifiers_unique -> Vec<Node<DeclarationSpecifier>> =
-    list0<node<declaration_specifier_nontype>>
-
-declaration_specifiers_nonunique  -> Vec<Node<DeclarationSpecifier>> =
-    list0<node<declaration_specifier_nontype / declaration_specifier_nonunique_type0>>
-
-declaration_specifier_nontype -> DeclarationSpecifier =
+declaration_specifier_nontype -> Node<DeclarationSpecifier> = node<declaration_specifier_nontype0>
+declaration_specifier_nontype0 -> DeclarationSpecifier =
     s:storage_class_specifier { DeclarationSpecifier::StorageClass(s) } /
     s:type_qualifier { DeclarationSpecifier::TypeQualifier(s) } /
     s:function_specifier { DeclarationSpecifier::Function(s) } /
@@ -513,9 +495,7 @@ declaration_specifier_nontype -> DeclarationSpecifier =
     s:gnu<attribute_specifier> { DeclarationSpecifier::Extension(s) } /
     s:ms<ms_extension_specifier_list> { DeclarationSpecifier::Extension(s) }
 
-declaration_typedef -> Vec<Node<DeclarationSpecifier>> =
-    s:node<declaration_typedef0> { vec![ s ] }
-
+declaration_typedef -> Node<DeclarationSpecifier> = node<declaration_typedef0>
 declaration_typedef0 -> DeclarationSpecifier =
     s:storage_class_typedef { DeclarationSpecifier::StorageClass(s) }
 

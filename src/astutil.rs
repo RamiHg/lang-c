@@ -129,3 +129,54 @@ pub fn int_suffix(mut s: &str) -> Result<IntegerSuffix, &'static str> {
         imaginary: i,
     })
 }
+
+pub trait Concat<T> {
+    fn concat(self) -> Vec<T>;
+}
+
+impl<T> Concat<T> for (T, Vec<T>, Vec<T>) {
+    fn concat(self) -> Vec<T> {
+        let mut result = Vec::with_capacity(1 + self.1.len() + self.2.len());
+        result.push(self.0);
+        result.extend(self.1);
+        result.extend(self.2);
+        result
+    }
+}
+
+impl<T> Concat<T> for (Vec<T>, T, Vec<T>) {
+    fn concat(mut self) -> Vec<T> {
+        self.0.reserve(1 + self.2.len());
+        self.0.push(self.1);
+        self.0.extend(self.2);
+        self.0
+    }
+}
+
+impl<T> Concat<T> for (Vec<T>, Vec<T>, T) {
+    fn concat(mut self) -> Vec<T> {
+        self.0.reserve(1 + self.1.len());
+        self.0.extend(self.1);
+        self.0.push(self.2);
+        self.0
+    }
+}
+
+impl<T> Concat<T> for (T, Vec<T>, T) {
+    fn concat(self) -> Vec<T> {
+        let mut result = Vec::with_capacity(2 + self.1.len());
+        result.push(self.0);
+        result.extend(self.1);
+        result.push(self.2);
+        result
+    }
+}
+
+impl<T> Concat<T> for (Vec<T>, Vec<T>, Vec<T>) {
+    fn concat(mut self) -> Vec<T> {
+        self.0.reserve(self.1.len() + self.2.len());
+        self.0.extend(self.1);
+        self.0.extend(self.2);
+        self.0
+    }
+}
