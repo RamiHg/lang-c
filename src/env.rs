@@ -14,6 +14,7 @@ pub enum Symbol {
 pub struct Env {
     symbols: Vec<HashMap<String, Symbol>>,
     pub extensions_gnu: bool,
+    pub extensions_strict_gnu: bool,
     pub extensions_clang: bool,
     pub extensions_windows: bool,
     pub reserved: HashSet<&'static str>,
@@ -41,8 +42,10 @@ impl Env {
         symbols.insert("__builtin_va_list".to_owned(), Symbol::Typename);
         reserved.extend(strings::RESERVED_C11.iter());
         reserved.extend(strings::RESERVED_GNU.iter());
+        reserved.extend(strings::RESERVED_STRICT_GNU.iter());
         Env {
             extensions_gnu: true,
+            extensions_strict_gnu: true,
             symbols: vec![symbols],
             reserved: reserved,
             ..Default::default()

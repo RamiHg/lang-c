@@ -43,6 +43,9 @@ pub const RESERVED_C11: &'static [&'static str] = &[
     "_Noreturn",
     "_Static_assert",
     "_Thread_local",
+];
+
+pub const RESERVED_STRICT_GNU: &'static [&'static str] = &[
     "_Float16",
     "_Float16x",
     "_Float32",

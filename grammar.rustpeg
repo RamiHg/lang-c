@@ -591,7 +591,7 @@ type_specifier_nonunique -> TypeSpecifier =
     K<"signed" / gnu<"__signed" "__"?>> { TypeSpecifier::Signed } /
     K<"unsigned"> { TypeSpecifier::Unsigned } /
     K<"_Complex" / gnu<"__complex" "__"?>> { TypeSpecifier::Complex } /
-    t:K<ts18661_float_type_specifier> { TypeSpecifier::TS18661Float(t) } /
+    t:strict_gnu<K<ts18661_float_type_specifier>> { TypeSpecifier::TS18661Float(t) } /
     gnu<typeof_specifier> /
     ms<ms_integer_types>
 
@@ -1151,8 +1151,10 @@ function_definition -> FunctionDefinition =
 ////
 
 gnu<E> = &gnu_guard e:E { e }
+strict_gnu<E> = &strict_gnu_guard e:E { e }
 
 gnu_guard = {? if env.extensions_gnu { Ok(()) } else { Err("gnu extensions disabled") } }
+strict_gnu_guard = {? if env.extensions_strict_gnu { Ok(()) } else { Err("gnu strict extensions disabled") } }
 
 ////
 // GNU attributes
